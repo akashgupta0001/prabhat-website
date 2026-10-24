@@ -72,7 +72,9 @@
       '<div class="announce"><div class="in"><span><b>Footwear for every step</b> &nbsp;Enquire on WhatsApp for models, sizes and colours</span>' + (phone ? '<span class="r">Phone / WhatsApp: <b>' + phone + '</b></span>' : '') + '</div></div>' +
       '<div class="wrap"><div class="top"><header class="head"><a class="brand" href="/" aria-label="' + esc(COMPANY) + ' home"><span class="mark">P</span><span><b>Prabhat Industries</b><small>SUPREMLITE · STON</small></span></a>' +
       '<nav class="nav" aria-label="Main">' + navHTML() + '</nav>' +
-      '<div class="actions"><a class="btn accent" href="' + general() + '" target="_blank" rel="noopener">Enquire on WhatsApp</a>' +
+      '<div class="actions"><div class="ct"><button class="ctBtn" id="ctBtn" type="button" aria-label="Contact us" aria-expanded="false" aria-controls="ctMenu" title="Contact us"><svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25c1.1.37 2.3.57 3.6.57a1 1 0 011 1V20a1 1 0 01-1 1C10.6 21 3 13.4 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.6a1 1 0 01-.25 1z"/></svg></button>' +
+      '<div class="ctMenu" id="ctMenu" hidden><b class="ctT">Contact us</b>' + (phone ? '<a class="ctA call" href="tel:+91' + phone.replace(/\D/g, '').slice(-10) + '"><span class="ctI">&#9742;</span><span><b>Call us</b><small>' + phone + '</small></span></a>' : '') +
+      '<a class="ctA wa" href="' + general() + '" target="_blank" rel="noopener"><span class="ctI">&#128172;</span><span><b>WhatsApp</b><small>Chat with us</small></span></a></div></div>' +
       '<div class="co"><button class="btn brand" id="coBtn" aria-expanded="false" aria-controls="coMenu" type="button">Company <svg class="chev" aria-hidden="true" viewBox="0 0 16 16"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
       '<nav class="menu" id="coMenu" aria-label="Company information" hidden>' +
       '<a href="/about">About us <span aria-hidden="true">→</span></a><a href="/mission-vision">Mission &amp; vision <span aria-hidden="true">→</span></a><a href="/values">Our values <span aria-hidden="true">→</span></a>' +
@@ -88,8 +90,12 @@
       document.addEventListener('click', function () { mm.hidden = true; mb.setAttribute('aria-expanded', 'false'); });
       window.addEventListener('scroll', function () { mm.hidden = true; }, { passive: true });
     }
+    var cb = $('#ctBtn'), cm = $('#ctMenu');
+    cb.onclick = function (e) { e.stopPropagation(); var o = cm.hidden; cm.hidden = !o; cb.setAttribute('aria-expanded', String(o)); if (o) { var cmenu = $('#coMenu'); if (cmenu) { cmenu.hidden = true; } } };
+    document.addEventListener('click', function (e) { if (!cm.hidden && !e.target.closest('.ct')) { cm.hidden = true; cb.setAttribute('aria-expanded', 'false'); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !cm.hidden) { cm.hidden = true; cb.focus(); } });
     var btn = $('#coBtn'), menu = $('#coMenu');
-    function setMenu(o) { btn.setAttribute('aria-expanded', String(o)); menu.hidden = !o; }
+    function setMenu(o) { btn.setAttribute('aria-expanded', String(o)); menu.hidden = !o; if (o) cm.hidden = true; }
     btn.onclick = function (e) { e.stopPropagation(); setMenu(menu.hidden); };
     document.addEventListener('click', function (e) { if (!menu.hidden && !e.target.closest('.co')) setMenu(false); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) { setMenu(false); btn.focus(); } });
