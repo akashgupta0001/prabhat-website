@@ -54,7 +54,16 @@
     var cs = D.cats.filter(function (c) { return c.filterVisible !== false; });
     var cur = new URLSearchParams(location.search).get('cat') || '';
     var tabs = [['/catalogue', 'All', page === 'catalogue' && !cur]].concat(cs.map(function (c) { return ['/catalogue?cat=' + encodeURIComponent(c.slug || c.id), c.name, page === 'catalogue' && (cur === c.slug || cur === c.id)]; }));
-    return tabs.map(function (t) { return '<a class="tab" style="text-decoration:none" href="' + t[0] + '" aria-pressed="' + !!t[2] + '">' + esc(t[1]) + '</a>'; }).join('');
+    var VIS = 4; /* All + first 3 categories stay on the bar; the rest go into the "More" dropdown */
+    function tabHTML(t) { return '<a class="tab" style="text-decoration:none" href="' + t[0] + '" aria-pressed="' + !!t[2] + '">' + esc(t[1]) + '</a>'; }
+    return tabs.slice(0, VIS).map(tabHTML).join('');
+  }
+  function moreHTML() {
+    var cs = D.cats.filter(function (c) { return c.filterVisible !== false; }).slice(3);
+    if (!cs.length) return '';
+    var cur = new URLSearchParams(location.search).get('cat') || '', on = cs.some(function (c) { return page === 'catalogue' && (cur === c.slug || cur === c.id); });
+    return '<div class="moreWrap"><button class="tab" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-pressed="' + on + '">More &#9662;</button>' +
+      '<div class="moreMenu" id="moreMenu" hidden>' + cs.map(function (c) { return '<a href="/catalogue?cat=' + encodeURIComponent(c.slug || c.id) + '">' + esc(c.name) + '</a>'; }).join('') + '</div></div>';
   }
   function drawHeader() {
     var top = $('#site-top'); if (!top) return;
@@ -71,8 +80,14 @@
       '<a href="/wholesale">Wholesale &amp; business enquiries <span aria-hidden="true">→</span></a><a href="/contact">Contact us <span aria-hidden="true">→</span></a>' +
       '<div class="facts"><span><b>Established</b> 2015</span>' + (s.location ? '<span><b>Location</b> ' + esc(s.location) + '</span>' : '') + (phone ? '<span><b>Phone / WhatsApp</b> ' + phone + '</span>' : '') + '</div></nav></div></div></header>' +
       '<div class="gbar" role="navigation" aria-label="Shop by category"><span class="lbl">Shop by</span><button class="arrow" id="prev" type="button" aria-label="Scroll left">‹</button>' +
-      '<div class="tabs" id="tabs">' + gbarHTML() + '</div><button class="arrow" id="next" type="button" aria-label="Scroll right">›</button></div></div></div>';
+      '<div class="tabs" id="tabs">' + gbarHTML() + '</div>' + moreHTML() + '<button class="arrow" id="next" type="button" aria-label="Scroll right">›</button></div></div></div>';
     var tb = $('#tabs'); $('#prev').onclick = function () { tb.scrollBy({ left: -160, behavior: 'smooth' }); }; $('#next').onclick = function () { tb.scrollBy({ left: 160, behavior: 'smooth' }); };
+    var mb = $('#moreBtn'), mm = $('#moreMenu');
+    if (mb) {
+      mb.onclick = function (e) { e.stopPropagation(); var o = mm.hidden; mm.hidden = !o; mb.setAttribute('aria-expanded', String(o)); if (o) { var r = mb.getBoundingClientRect(); mm.style.top = r.bottom + 'px'; mm.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 208)) + 'px'; } };
+      document.addEventListener('click', function () { mm.hidden = true; mb.setAttribute('aria-expanded', 'false'); });
+      window.addEventListener('scroll', function () { mm.hidden = true; }, { passive: true });
+    }
     var btn = $('#coBtn'), menu = $('#coMenu');
     function setMenu(o) { btn.setAttribute('aria-expanded', String(o)); menu.hidden = !o; }
     btn.onclick = function (e) { e.stopPropagation(); setMenu(menu.hidden); };
