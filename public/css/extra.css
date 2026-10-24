@@ -250,3 +250,11 @@ section.abg .lcard p,section.abg .lcard h3,section.abg .lcard .more{color:#fff}
 .zoomv .zp { left: 12px; top: 50%; transform: translateY(-50%); }
 .zoomv .zn { right: 12px; top: 50%; transform: translateY(-50%); }
 .zoomv .zc { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; opacity: .8; }
+
+/* footer brand: bold and eye-catching */
+.foot .fb{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.foot .fb .mark{width:58px;height:58px;border-radius:16px;font-size:30px;background:var(--accent);box-shadow:0 8px 22px rgba(224,58,30,.45)}
+.foot .fname{display:grid;gap:6px}
+.foot .fname b{font:900 clamp(1.5rem,3.2vw,2.15rem)/1 var(--f-head);letter-spacing:.03em;text-transform:uppercase;background:linear-gradient(95deg,#fff 30%,#FFB4A3 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.foot .fname small{font:700 11px/1 var(--f-head);letter-spacing:.34em;color:var(--accent);filter:brightness(1.25)}
+@media (max-width:480px){.foot .fname b{font-size:1.5rem}.foot .fb .mark{width:50px;height:50px;font-size:26px}}

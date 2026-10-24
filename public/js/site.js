@@ -115,7 +115,7 @@
     var s = D.settings, cats = D.cats.slice(0, 6);
     foot.className = 'foot';
     foot.innerHTML = '<div class="in"><div class="fgrid">' +
-      '<div><div class="fb"><span class="mark">P</span><b>Prabhat Industries</b></div><p>Footwear for every step. Footwear manufacturing and trading, established 2015.</p>' + (s.location ? '<p>' + esc(s.location) + '</p>' : '') + (s.phone ? '<p>Phone / WhatsApp: ' + esc(s.phone) + '</p>' : '') + (s.email ? '<p>' + esc(s.email) + '</p>' : '') + '</div>' +
+      '<div><div class="fb"><span class="mark">P</span><span class="fname"><b>Prabhat Industries</b><small>SUPREMLITE · STON</small></span></div><p>Footwear for every step. Footwear manufacturing and trading, established 2015.</p>' + (s.location ? '<p>' + esc(s.location) + '</p>' : '') + (s.phone ? '<p>Phone / WhatsApp: ' + esc(s.phone) + '</p>' : '') + (s.email ? '<p>' + esc(s.email) + '</p>' : '') + '</div>' +
       '<div><h4>Company</h4><ul><li><a href="/about">About us</a></li><li><a href="/mission-vision">Mission &amp; vision</a></li><li><a href="/values">Our values</a></li><li><a href="/wholesale">Wholesale</a></li><li><a href="/contact">Contact</a></li></ul></div>' +
       '<div><h4>Catalogue</h4><ul>' + cats.map(function (c) { return '<li><a href="/catalogue?cat=' + encodeURIComponent(c.slug || c.id) + '">' + esc(c.name) + '</a></li>'; }).join('') + '</ul></div>' +
       '<div><h4>Brands</h4><ul>' + D.brands.map(function (b) { return '<li><a href="/' + (b.slug === 'supremlite' || b.slug === 'ston' ? esc(b.slug) : 'catalogue?brand=' + encodeURIComponent(b.id)) + '">' + esc(b.name) + '</a></li>'; }).join('') + '<li><a href="/catalogue">Full catalogue</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul></div>' +
