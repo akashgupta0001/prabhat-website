@@ -86,7 +86,7 @@
     pvSlide: function (t) { UI.pvi = +t.dataset.i; A.rePreview(); },
     /* filters panel */
     fTab: function (t) { UI.ftab = t.dataset.v; A.render(); },
-    fvToggle: function (t) { UI.fv[t.dataset.id] = t.checked; var k = ['cats', 'vars', 'feats'].filter(function (k) { return S[k].some(function (x) { return x.id === t.dataset.id; }); })[0], o = S[k].find(function (x) { return x.id === t.dataset.id; }); if ((o.filterVisible !== false) === t.checked) delete UI.fv[t.dataset.id]; A.render(); },
+    fvToggle: function (t) { UI.fv[t.dataset.id] = t.checked; var k = A.taxKeys().filter(function (k) { return S[k].some(function (x) { return x.id === t.dataset.id; }); })[0], o = S[k].find(function (x) { return x.id === t.dataset.id; }); if ((o.filterVisible !== false) === t.checked) delete UI.fv[t.dataset.id]; A.render(); },
     fvSave: function () { A.fvSave(); }, fvReset: function () { UI.fv = {}; A.render(); },
     fvAll: function (t) { var on = t.dataset.v === '1'; [UI.ftab].forEach(function (k) { S[k].forEach(function (x) { if ((x.filterVisible !== false) !== on) UI.fv[x.id] = on; else delete UI.fv[x.id]; }); }); A.render(); },
     /* products */
@@ -100,7 +100,7 @@
     bulkArchive: function () { var ids = Object.keys(UI.prod.sel).filter(function (k) { return UI.prod.sel[k]; }); A.confirmBox({ title: 'Archive ' + ids.length + ' products?', body: '<p>They are hidden from the public catalogue and keep all their data.</p>', actions: [{ label: 'Archive', fn: async function () { if (await A.run(async function () { for (var id of ids) await A.col('products').doc(id).update({ status: 'archived', updated: A.now() }); }, ids.length + ' products archived.')) { A.log(ids.length + ' products archived'); UI.prod.sel = {}; A.closeModal(); } } }] }); },
     bulkCat: async function () { var cid = A.$('#bulkCat').value, ids = Object.keys(UI.prod.sel).filter(function (k) { return UI.prod.sel[k]; }); if (!cid) { A.toast('Choose a category first.', 'err'); return; } if (await A.run(async function () { for (var id of ids) { var p = S.products.find(function (x) { return x.id === id; }), a = (p.catIds || []).slice(); if (a.indexOf(cid) < 0) a.push(cid); await A.col('products').doc(id).update({ catIds: a, updated: A.now() }); } }, 'Category assigned to ' + ids.length + ' products.')) { A.log('Category assigned to ' + ids.length + ' products'); UI.prod.sel = {}; } },
     /* taxonomy */
-    renameTax: function (t) { A.labelForm(t.dataset.k); }, saveLabels: function (t) { A.saveLabels(t.dataset.k); }, resetLabels: function (t) { A.saveLabels(t.dataset.k, true); },
+    newGroup: function () { A.groupForm(); }, saveGroup: function () { A.saveGroup(); }, delGroup: function (t) { A.askDelGroup(t.dataset.k); }, renameTax: function (t) { A.labelForm(t.dataset.k); }, saveLabels: function (t) { A.saveLabels(t.dataset.k); }, resetLabels: function (t) { A.saveLabels(t.dataset.k, true); },
     addTax: function (t) { A.taxForm(t.dataset.k); }, editTax: function (t) { A.taxForm(t.dataset.k, t.dataset.id); }, dupTax: function (t) { A.dupTax(t.dataset.k, t.dataset.id); }, delTax: function (t) { A.askDelTax(t.dataset.k, t.dataset.id); },
     moveTax: function (t) { A.moveTax(t.dataset.k, +t.dataset.i, +t.dataset.d); }, saveTax: function (t) { A.saveTax(t.dataset.k, t.dataset.id); }, exportTax: function (t) { A.exportTax(t.dataset.k); },
     taxActive: function (t) { A.run(function () { return A.col(t.dataset.k).doc(t.dataset.id).update({ active: t.checked, updated: A.now() }); }, t.checked ? 'Activated.' : 'Deactivated. Hidden from new assignments and public filters.'); },
@@ -174,13 +174,14 @@
     if (!A.db) { A.render(); return; }
     if (A.assets) { try { var l = await A.assets.list(); A.storage = l.usage; } catch (e) { /* optional */ } }
     var onErr = function (e) { A.toast('Live data error: ' + A.errMsg(e), 'err'); };
+    A.subGroup = function (n) { A.col(n).onSnapshot(function (snap) { S[n] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); S[n].sort(A.byOrder); A.refresh(); }, onErr); };
     ['cats', 'vars', 'feats', 'brands', 'products', 'pages', 'menu', 'enq'].forEach(function (n) {
       A.col(n).onSnapshot(function (snap) { S[n] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); if (n !== 'products' && n !== 'enq' && n !== 'pages') S[n].sort(A.byOrder); S.loaded[n] = true; A.refresh(); }, onErr);
     });
     A.col('activity').orderBy('ts', 'desc').limit(30).onSnapshot(function (snap) { S.activity = snap.docs.map(function (d) { return d.data(); }); A.refresh(); }, onErr);
     A.db.doc('site/home_draft').onSnapshot(function (s) { if (!A.dirty) A.H = s.exists ? Object.assign(A.defHome(), s.data()) : A.defHome(); S.loaded.draft = true; A.refresh(); }, onErr);
     A.db.doc('site/home_live').onSnapshot(function (s) { S.live = s.exists ? s.data() : null; S.loaded.live = true; A.refresh(); }, onErr);
-    A.db.doc('site/settings').onSnapshot(function (s) { S.settings = s.exists ? s.data() : {}; A.applyLabels(); A.syncNav(); A.refresh(); }, onErr);
+    A.db.doc('site/settings').onSnapshot(function (s) { S.settings = s.exists ? s.data() : {}; A.applyLabels(); A.syncGroups(); A.syncNav(); A.refresh(); }, onErr);
   };
   A.boot();
 })(window.A);

@@ -73,6 +73,7 @@
       '<label class="fld"><span>Description</span><textarea id="pf_desc">' + esc(p.desc || '') + '</textarea></label>' +
       '<div class="fld"><span>Main image</span><div class="gal" id="pfMain"></div></div><div class="fld"><span>Gallery images</span><div class="gal" id="pfGal"></div></div>' +
       '<div class="fld"><span>Categories</span>' + chips('cats', 'catIds', p.catIds || []) + '</div><div class="fld"><span>Varieties</span>' + chips('vars', 'varIds', p.varIds || []) + '</div><div class="fld"><span>Features</span>' + chips('feats', 'featIds', p.featIds || []) + '</div>' +
+      A.taxKeys().slice(3).map(function (k) { return '<div class="fld"><span>' + esc(A.TAX[k].plural) + '</span>' + chips(k, A.TAX[k].field, p[A.TAX[k].field] || []) + '</div>'; }).join('') +
       '<div class="g2">' + t('Available sizes (comma separated)', 'pf_sizes', (p.sizes || []).join(', ')) + t('Available colours (comma separated)', 'pf_colours', (p.colours || []).join(', ')) + '</div>' + t('Material details', 'pf_material', p.material) +
       '<div class="g3">' + t('MRP (optional)', 'pf_mrp', p.mrp, 'number') + t('Selling price (optional)', 'pf_price', p.price, 'number') + t('Stock quantity (optional)', 'pf_stock', p.stock, 'number') + '</div>' +
       '<div class="g2"><label class="row-sw"><label class="sw"><input type="checkbox" id="pf_featured" ' + (p.featured ? 'checked' : '') + '><i></i></label><span>Featured product</span></label><label class="row-sw"><label class="sw"><input type="checkbox" id="pf_home" ' + (p.home ? 'checked' : '') + '><i></i></label><span>Show on homepage</span></label></div>' +
@@ -94,6 +95,7 @@
     var old = id ? S.products.find(function (p) { return p.id === id; }) : null;
     var o = Object.assign({}, old || {}, { id: id || undefined, name: name, sku: sku, slug: slug, brand: v('pf_brand'), status: v('pf_status'), desc: v('pf_desc'), img: A.PF.img, gallery: A.PF.gallery, catIds: grp('catIds'), varIds: grp('varIds'), featIds: grp('featIds'),
       sizes: list(v('pf_sizes')), colours: list(v('pf_colours')), material: v('pf_material'), mrp: mrp, price: price, stock: stock, featured: v('pf_featured'), home: v('pf_home'), seoTitle: v('pf_seot'), seoDesc: v('pf_seod') });
+    A.taxKeys().slice(3).forEach(function (k) { o[A.TAX[k].field] = grp(A.TAX[k].field); });
     if (await A.run(function () { return A.save('products', o); }, 'Product saved.')) { A.log('Product ' + (id ? 'updated' : 'added') + ': ' + name); A.closeModal(); }
   };
   A.dupProduct = async function (id) {

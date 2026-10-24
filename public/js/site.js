@@ -232,6 +232,8 @@
     var st = { q: qs.get('q') || '', brand: brand ? brand.id : '', cat: cat ? cat.id : '', vr: '', ft: '', sort: qs.get('sort') || 'new' };
     var vr = D.vars.filter(function (v) { return v.slug === qs.get('variety') || v.id === qs.get('variety'); })[0]; if (vr) st.vr = vr.id;
     var ft = D.feats.filter(function (v) { return v.slug === qs.get('feature') || v.id === qs.get('feature'); })[0]; if (ft) st.ft = ft.id;
+    var GR = (D.groups || []).filter(function (g) { return g.items && g.items.some(function (x) { return x.filterVisible !== false; }); });
+    GR.forEach(function (g) { var it = g.items.filter(function (x) { return x.slug === qs.get('g_' + g.id) || x.id === qs.get('g_' + g.id); })[0]; st['g_' + g.id] = it ? it.id : ''; });
     var FL = D.settings.filterLabels || {}, lbl = function (k, d) { return String((FL[k] && FL[k].plural) || d).toLowerCase(); };
     var STEP = 12, shown = STEP;
     var opt = function (list, val, all) { return '<option value="">' + all + '</option>' + list.filter(function (x) { return x.filterVisible !== false; }).map(function (x) { return '<option value="' + esc(x.id) + '"' + (val === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join(''); };
@@ -241,7 +243,7 @@
     root.innerHTML = '<div class="filters" role="search"><input id="fq" type="search" placeholder="Search model code or name" aria-label="Search" value="' + esc(st.q) + '">' +
       (preBrand ? '<span style="display:none"></span>' : '<select id="fb" aria-label="Brand">' + opt(D.brands, st.brand, 'All brands') + '</select>') +
       '<select id="fc" aria-label="' + lbl('cats', 'categories') + '">' + opt(D.cats, st.cat, 'All ' + lbl('cats', 'categories')) + '</select><select id="fv" aria-label="Variety">' + opt(D.vars, st.vr, 'All ' + lbl('vars', 'varieties')) + '</select><select id="ff" aria-label="Feature">' + opt(D.feats, st.ft, 'All ' + lbl('feats', 'features')) + '</select>' +
-      '<select id="fs" aria-label="Sort"><option value="new">Newest first</option><option value="name">Name A to Z</option><option value="sku">Model code</option></select></div>' +
+      GR.map(function (g) { return '<select id="fg_' + g.id + '" aria-label="' + esc(g.plural) + '">' + opt(g.items, st['g_' + g.id], 'All ' + esc(g.plural.toLowerCase())) + '</select>'; }).join('') + '<select id="fs" aria-label="Sort"><option value="new">Newest first</option><option value="name">Name A to Z</option><option value="sku">Model code</option></select></div>' +
       '<p class="count" id="count" aria-live="polite"></p><div class="pgrid" id="pgrid"></div><div class="loadmore" id="more" hidden><button class="btn brand" type="button">Load more</button></div>';
     $('#fs').value = st.sort;
     var list = [];
@@ -250,6 +252,7 @@
       list = D.products.filter(function (p) {
         if (st.brand && p.brand !== st.brand) return false; if (st.cat && (p.catIds || []).indexOf(st.cat) < 0) return false;
         if (st.vr && (p.varIds || []).indexOf(st.vr) < 0) return false; if (st.ft && (p.featIds || []).indexOf(st.ft) < 0) return false;
+        for (var gi = 0; gi < GR.length; gi++) { var gv = st['g_' + GR[gi].id]; if (gv && ((p.fx || {})[GR[gi].id] || []).indexOf(gv) < 0) return false; }
         return !t || (p.sku + ' ' + p.name + ' ' + brandName(p.brand) + ' ' + catOf(p)).toLowerCase().indexOf(t) > -1;
       });
       list.sort(function (a, b) { return st.sort === 'name' ? a.name.localeCompare(b.name) : st.sort === 'sku' ? String(a.sku).localeCompare(String(b.sku), undefined, { numeric: true }) : String(b.created).localeCompare(String(a.created)); });
@@ -264,13 +267,14 @@
     }
     function sync() {
       var p = new URLSearchParams(); if (st.q) p.set('q', st.q); if (st.brand && !preBrand) p.set('brand', st.brand);
-      var c = byId(D.cats, st.cat); if (c) p.set('cat', c.slug || c.id); var v = byId(D.vars, st.vr); if (v) p.set('variety', v.slug || v.id); var f = byId(D.feats, st.ft); if (f) p.set('feature', f.slug || f.id); if (st.sort !== 'new') p.set('sort', st.sort);
+      var c = byId(D.cats, st.cat); if (c) p.set('cat', c.slug || c.id); var v = byId(D.vars, st.vr); if (v) p.set('variety', v.slug || v.id); var f = byId(D.feats, st.ft); if (f) p.set('feature', f.slug || f.id); GR.forEach(function (g) { var it = byId(g.items, st['g_' + g.id]); if (it) p.set('g_' + g.id, it.slug || it.id); }); if (st.sort !== 'new') p.set('sort', st.sort);
       history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
     }
     [['fq', 'q'], ['fb', 'brand'], ['fc', 'cat'], ['fv', 'vr'], ['ff', 'ft'], ['fs', 'sort']].forEach(function (m) {
       var el = $('#' + m[0]); if (!el) return;
       el.addEventListener('input', function () { st[m[1]] = el.value; shown = STEP; sync(); apply(); });
     });
+    GR.forEach(function (g) { var el = $('#fg_' + g.id); el.addEventListener('input', function () { st['g_' + g.id] = el.value; shown = STEP; sync(); apply(); }); });
     $('#more button').onclick = function () { shown += STEP; draw(); };
     apply();
   }

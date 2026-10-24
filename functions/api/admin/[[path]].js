@@ -11,7 +11,7 @@ async function bust() {
 }
 
 function check(col, id) {
-  if (!COLLECTIONS.includes(col)) return 'Unknown collection.';
+  if (!COLLECTIONS.includes(col) && !/^fg_[a-z0-9]{3,12}$/.test(col)) return 'Unknown collection.';
   if (id !== undefined && !ID_RE.test(id)) return 'Invalid id.';
   return null;
 }

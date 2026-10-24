@@ -279,3 +279,6 @@ table.t tr:hover td { background: var(--soft); }
 .fl .it > span:not(.th2):not(.n):not(.pill) { min-width: 0; overflow-wrap: anywhere; }
 .fl .it .ibtn { flex: none; }
 .fl { max-height: 320px; }
+
+.tabs .newg{margin-left:auto;background:none;border:1px dashed var(--line);border-radius:8px;padding:6px 10px;font:600 12px/1 inherit;color:var(--blue,#1d4ed8);cursor:pointer;display:inline-flex;gap:4px;align-items:center;align-self:center}
+.tabs .newg svg{width:12px;height:12px}

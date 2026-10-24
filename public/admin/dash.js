@@ -132,7 +132,7 @@
   };
   function fvOn(k, x) { return Object.prototype.hasOwnProperty.call(UI.fv, x.id) ? UI.fv[x.id] : x.filterVisible !== false; }
   A.filtersPanel = function () {
-    var tabs = ['cats', 'vars', 'feats'], cur = UI.ftab, q = (UI.fq || '').toLowerCase();
+    var tabs = A.taxKeys(), cur = A.TAX[UI.ftab] ? UI.ftab : 'cats', q = (UI.fq || '').toLowerCase();
     var others = tabs.filter(function (t) { return t !== cur; });
     function list(k, withCount) {
       return S[k].filter(function (x) { return !q || x.name.toLowerCase().indexOf(q) > -1; }).map(function (x) {
@@ -140,11 +140,11 @@
       }).join('') || '<div class="empty" style="padding:16px">None yet</div>';
     }
     function heading(k) {
-      return '<button type="button" class="ibtn" style="width:22px;height:22px" data-act="renameTax" data-k="' + k + '" aria-label="Rename heading" title="Rename heading">' + ic('edit') + '</button><button type="button" class="ibtn" style="width:22px;height:22px" data-act="addTax" data-k="' + k + '" aria-label="Add new" title="Add new">' + ic('plus') + '</button>';
+      return (A.TAX[k].custom ? '<button type="button" class="ibtn r" style="width:22px;height:22px" data-act="delGroup" data-k="' + k + '" aria-label="Delete this filter group" title="Delete this filter group">' + ic('trash') + '</button>' : '') + '<button type="button" class="ibtn" style="width:22px;height:22px" data-act="renameTax" data-k="' + k + '" aria-label="Rename heading" title="Rename heading">' + ic('edit') + '</button><button type="button" class="ibtn" style="width:22px;height:22px" data-act="addTax" data-k="' + k + '" aria-label="Add new" title="Add new">' + ic('plus') + '</button>';
     }
     var pend = Object.keys(UI.fv).length;
-    return '<div class="card"><div class="ph-row"><span class="ti">' + ic('layers') + '</span><div><h2>Product Filters <span style="font-weight:500;color:var(--muted)">(' + S.cats.length + ' Categories × ' + S.vars.length + ' Varieties × ' + S.feats.length + ' Features)</span></h2></div></div>' +
-      '<div class="tabs">' + tabs.map(function (t) { return '<button class="' + (cur === t ? 'on' : '') + '" data-act="fTab" data-v="' + t + '">' + A.TAX[t].plural + ' (' + S[t].length + ')</button>'; }).join('') + '</div>' +
+    return '<div class="card"><div class="ph-row"><span class="ti">' + ic('layers') + '</span><div><h2>Product Filters <span style="font-weight:500;color:var(--muted)">(' + S.cats.length + ' Categories × ' + S.vars.length + ' Varieties × ' + S.feats.length + ' Features' + (A.taxKeys().length > 3 ? ' + ' + (A.taxKeys().length - 3) + ' more' : '') + ')</span></h2></div></div>' +
+      '<div class="tabs">' + tabs.map(function (t) { return '<button class="' + (cur === t ? 'on' : '') + '" data-act="fTab" data-v="' + t + '">' + A.TAX[t].plural + ' (' + S[t].length + ')</button>'; }).join('') + '<button class="newg" data-act="newGroup" title="Create a new filter group">' + ic('plus') + ' New filter group</button></div>' +
       '<div class="tools" style="padding-bottom:0"><input type="search" placeholder="Search" aria-label="Search filters" data-act-input="fq" value="' + esc(UI.fq) + '"><button class="btn sm" data-act="addTax" data-k="' + cur + '">' + ic('plus') + ' Add New</button></div>' +
       '<div class="fp"><div class="fl"><h5><span>' + esc(A.TAX[cur].plural) + '</span><span class="acts">' + heading(cur) + '</span></h5>' + list(cur, true) + '</div><div class="fcols">' +
       others.map(function (k) { return '<div class="fl"><h5><span>' + S[k].length + ' ' + esc(A.TAX[k].plural) + '</span><span class="acts">' + heading(k) + '</span></h5>' + list(k, false) + '</div>'; }).join('') +
@@ -161,16 +161,44 @@
       '<div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn" data-act="resetLabels" data-k="' + k + '">Reset to default</button><button class="btn pri" data-act="saveLabels" data-k="' + k + '">Save</button></div>', 'sm');
   };
   A.saveLabels = async function (k, reset) {
+    if (A.TAX[k] && A.TAX[k].custom) {
+      var pl2 = A.mv('lb_pl').trim(), sg2 = A.mv('lb_sg').trim(); if (!pl2 || !sg2) { A.$('#lb_err').textContent = 'Both names are required.'; return; }
+      var gs = (S.settings.filterGroups || []).map(function (g) { return g.id === A.TAX[k].gid ? Object.assign({}, g, { plural: pl2, label: sg2 }) : g; }), o2 = Object.assign({}, S.settings, { filterGroups: gs });
+      if (await A.run(function () { return A.db.doc('site/settings').set(o2); }, 'Heading saved.')) { S.settings = o2; A.syncGroups(); A.closeModal(); A.refresh(true); } return;
+    }
     var pl = reset ? A.TAXDEF[k].plural : A.mv('lb_pl').trim(), sg = reset ? A.TAXDEF[k].label : A.mv('lb_sg').trim();
     if (!pl || !sg) { A.$('#lb_err').textContent = 'Both names are required.'; return; }
     var fl = Object.assign({}, S.settings.filterLabels || {}); fl[k] = { plural: pl, label: sg };
     var o = Object.assign({}, S.settings, { filterLabels: fl });
     if (await A.run(function () { return A.db.doc('site/settings').set(o); }, 'Heading saved.')) { S.settings = o; A.applyLabels(); A.log('Filter heading renamed: ' + pl); A.closeModal(); A.refresh(true); }
   };
+  A.groupForm = function () {
+    A.modal('<div class="sh-h"><h3>New filter group</h3><button class="ic-btn" data-act="closeModal" aria-label="Close">' + ic('x') + '</button></div><div class="sh-b">' +
+      '<p class="cell-s" style="margin-top:0">A filter group is a new way to sort products, for example Colours, Sizes, Sole Type or Season. It appears in the product form and as a filter on the public catalogue.</p>' +
+      '<label class="fld"><span>Group name (plural), for example "Colours"</span><input id="ng_pl"></label><label class="fld"><span>Single item name, for example "Colour"</span><input id="ng_sg"></label><p class="err" id="ng_err" role="alert"></p></div>' +
+      '<div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveGroup">Create group</button></div>', 'sm');
+  };
+  A.saveGroup = async function () {
+    var pl = A.mv('ng_pl').trim(), sg = A.mv('ng_sg').trim() || pl; if (!pl) { A.$('#ng_err').textContent = 'Enter a group name.'; return; }
+    var gs = (S.settings.filterGroups || []).slice();
+    if (gs.length >= 12) { A.$('#ng_err').textContent = 'You can have up to 12 extra groups.'; return; }
+    if (gs.some(function (g) { return g.plural.toLowerCase() === pl.toLowerCase(); }) || ['categories', 'varieties', 'features'].indexOf(pl.toLowerCase()) > -1) { A.$('#ng_err').textContent = 'A group with this name already exists.'; return; }
+    var id = 'g' + Math.random().toString(36).slice(2, 8); gs.push({ id: id, plural: pl, label: sg });
+    var o = Object.assign({}, S.settings, { filterGroups: gs });
+    if (await A.run(function () { return A.db.doc('site/settings').set(o); }, 'Filter group created.')) { S.settings = o; A.syncGroups(); UI.ftab = 'fg_' + id; A.log('Filter group created: ' + pl); A.closeModal(); A.refresh(true); }
+  };
+  A.askDelGroup = function (k) {
+    var T = A.TAX[k], n = S[k].length;
+    A.confirmBox({ title: 'Delete the "' + T.plural + '" group?', body: '<p>This permanently deletes the group and its <b>' + n + '</b> item' + (n === 1 ? '' : 's') + '. Products are not deleted; they simply lose this filter.</p>', actions: [{ label: 'Delete group', cls: 'dng', fn: async function () {
+      var gs = (S.settings.filterGroups || []).filter(function (g) { return g.id !== T.gid; }), o = Object.assign({}, S.settings, { filterGroups: gs }), items = S[k].slice();
+      var ok = await A.run(async function () { for (var i = 0; i < items.length; i++) await A.del(k, items[i].id); await A.db.doc('site/settings').set(o); }, 'Filter group deleted.');
+      if (ok) { S.settings = o; delete S[k]; A.syncGroups(); UI.ftab = 'cats'; A.log('Filter group deleted: ' + T.plural); A.closeModal(); A.refresh(true); }
+    } }] });
+  };
   A.fvSave = async function () {
     var ids = Object.keys(UI.fv), ok = await A.run(async function () {
       for (var i = 0; i < ids.length; i++) {
-        var id = ids[i], k = ['cats', 'vars', 'feats'].filter(function (t) { return S[t].some(function (x) { return x.id === id; }); })[0]; if (!k) continue;
+        var id = ids[i], k = A.taxKeys().filter(function (t) { return S[t].some(function (x) { return x.id === id; }); })[0]; if (!k) continue;
         await A.col(k).doc(id).update({ filterVisible: UI.fv[id], updated: A.now() });
       }
     }, 'Filter visibility saved.');

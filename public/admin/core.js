@@ -160,6 +160,16 @@ window.A = window.A || {};
       A.TAX[k].plural = (fl[k] && fl[k].plural) || A.TAXDEF[k].plural;
     });
   };
+  A.taxKeys = function () { return ['cats', 'vars', 'feats'].concat(((A.S.settings && A.S.settings.filterGroups) || []).map(function (g) { return 'fg_' + g.id; })); };
+  A.syncGroups = function () {
+    var gs = (A.S.settings && A.S.settings.filterGroups) || [];
+    gs.forEach(function (g) {
+      var k = 'fg_' + g.id; A.TAX[k] = { label: g.label, plural: g.plural, field: 'fx_' + g.id, route: '', ic: 'folder', custom: true, gid: g.id };
+      if (!A.S[k]) { A.S[k] = []; if (A.subGroup) A.subGroup(k); }
+    });
+    Object.keys(A.TAX).forEach(function (k) { if (A.TAX[k].custom && !gs.some(function (g) { return 'fg_' + g.id === k; })) delete A.TAX[k]; });
+    if (A.TAX[A.UI.ftab] === undefined) A.UI.ftab = 'cats';
+  };
   A.useCount = function (k, id) { var f = A.TAX[k].field; return A.S.products.filter(function (p) { return (p[f] || []).indexOf(id) > -1; }).length; };
   A.names = function (k, ids) { return (ids || []).map(function (id) { var o = A.S[k].find(function (x) { return x.id === id; }); return o ? o.name : null; }).filter(Boolean); };
   A.canWrite = function () { return A.db && A.role !== 'Viewer'; };

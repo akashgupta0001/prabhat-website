@@ -11,7 +11,7 @@ export async function onRequestGet({ env, waitUntil }) {
 
   await init(env);
   const { results } = await env.DB.prepare(
-    "SELECT col, id, data FROM docs WHERE col IN ('cats','vars','feats','brands','products','pages','menu','site') AND substr(id,1,1) <> '_'"
+    "SELECT col, id, data FROM docs WHERE (col IN ('cats','vars','feats','brands','products','pages','menu','site') OR col LIKE 'fg_%') AND substr(id,1,1) <> '_'"
   ).all();
   const by = {};
   for (const r of results) (by[r.col] = by[r.col] || []).push({ ...JSON.parse(r.data), id: r.id });
@@ -22,7 +22,7 @@ export async function onRequestGet({ env, waitUntil }) {
 
   const products = (by.products || []).filter((p) => p.status === 'active').map((p) => {
     const o = {
-      id: p.id, name: p.name, sku: p.sku, slug: p.slug, brand: p.brand, catIds: p.catIds || [], varIds: p.varIds || [], featIds: p.featIds || [],
+      id: p.id, name: p.name, sku: p.sku, slug: p.slug, brand: p.brand, catIds: p.catIds || [], varIds: p.varIds || [], featIds: p.featIds || [], fx: Object.fromEntries(Object.entries(p).filter(([k]) => k.startsWith('fx_')).map(([k, v]) => [k.slice(3), v])),
       desc: p.desc || '', img: p.img || '', gallery: p.gallery || [], sizes: p.sizes || [], colours: p.colours || [], material: p.material || '',
       featured: !!p.featured, home: !!p.home, created: p.created || '', seoTitle: p.seoTitle || '', seoDesc: p.seoDesc || '',
     };
@@ -39,6 +39,7 @@ export async function onRequestGet({ env, waitUntil }) {
     cats: (by.cats || []).filter(act).sort(order),
     vars: (by.vars || []).filter(act).sort(order),
     feats: (by.feats || []).filter(act).sort(order),
+    groups: (settings.filterGroups || []).map((g) => ({ id: g.id, plural: g.plural, label: g.label, items: (by['fg_' + g.id] || []).filter(act).sort(order) })),
     brands: (by.brands || []).filter(act).sort(order),
     menu: (by.menu || []).filter(act).sort(order),
     pages: (by.pages || []).filter((p) => p.status === 'published'),
