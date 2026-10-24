@@ -8,6 +8,6 @@
 /api/*
   X-Robots-Tag: noindex
 /css/*
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache
 /js/*
-  Cache-Control: public, max-age=300
+  Cache-Control: no-cache

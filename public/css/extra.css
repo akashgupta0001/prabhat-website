@@ -119,3 +119,5 @@
 .nav a { padding: 12px 10px; white-space: nowrap; }
 @media (max-width: 1320px) { .actions .btn.accent { padding-inline: 14px; font-size: 11.5px; } .nav a { padding-inline: 8px; font-size: 12px; letter-spacing: .05em; } }
 @media (max-width: 1120px) { .actions .btn.accent { display: none; } }
+.slide.pure::before, .slide.pure::after { display: none; }
+.slide.pure .fill { position: absolute; inset: 0; z-index: 2; }

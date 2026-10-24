@@ -150,6 +150,11 @@
     var slides = (h.slides || []).filter(function (s) { return s.active !== false && !(s.start && s.start > today) && !(s.end && s.end < today); });
     if (!slides.length) slides = [{ title: h.heading || 'Footwear for Every Step.', subtitle: h.sub || '', btnLabel: 'Explore catalogue', btnUrl: '/catalogue' }];
     var html = '<div class="slider" id="slider" aria-label="Featured">' + slides.map(function (s, i) {
+      var title = String(s.title || '').trim(), textless = s.img && (!title || title.toLowerCase() === 'new slide') && !String(s.subtitle || '').trim() && !String(s.btnLabel || '').trim();
+      if (textless) {
+        var u = String(s.btnUrl || '').trim();
+        return '<div class="slide hasimg pure' + (i === 0 ? ' on' : '') + '" style="background-image:url(' + img(s.img) + ')" role="img" aria-label="Banner ' + (i + 1) + '">' + (u && u !== '#' ? '<a class="fill" href="' + esc(u) + '" aria-label="Open banner link"></a>' : '') + '</div>';
+      }
       return '<div class="slide' + (i === 0 ? ' on' : '') + (s.img ? ' hasimg' : '') + '"' + (s.img ? ' style="background-image:url(' + img(s.img) + ')"' : '') + '><div class="copy">' + (s.eyebrow ? '<span class="eyebrow">' + esc(s.eyebrow) + '</span>' : '') + (i === 0 ? '<h1>' : '<h2 class="h1">') + esc(s.title) + (i === 0 ? '</h1>' : '</h2>') +
         (s.subtitle ? '<p>' + esc(s.subtitle) + '</p>' : '') + '<div class="cta">' + (s.btnLabel ? '<a class="btn accent" href="' + esc(slideLink(s.btnUrl)) + '">' + esc(s.btnLabel) + '</a>' : '') + '<a class="btn light wa" href="#">Enquire on WhatsApp</a></div></div>' + (s.img ? '' : '<div class="ghostword" aria-hidden="true">' + esc(String(s.title).split(' ').slice(-1)[0]) + '</div>') + '</div>';
     }).join('') + (slides.length > 1 ? '<div class="sctl" id="dots"></div><div class="sarrow"><button type="button" id="sprev" aria-label="Previous slide">‹</button><button type="button" id="snext" aria-label="Next slide">›</button></div>' : '') + '</div>';
