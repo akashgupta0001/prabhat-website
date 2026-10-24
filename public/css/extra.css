@@ -184,3 +184,19 @@
 .head .nav>a+a,.head .nav>.has-sub+a,.head .nav>a+.has-sub{border-left:1px solid rgba(255,255,255,.14)}
 .head .nav a::after{left:25%;right:25%;bottom:8px}
 @media (max-width:960px){.head{grid-template-columns:1fr auto}}
+
+/* homepage: centred category tiles, brand card images, about background */
+.tiles.tiles-c{display:flex;flex-wrap:wrap;justify-content:center;gap:22px}
+.tiles.tiles-c .tile{width:min(100%,210px);flex:0 1 210px}
+.bcard.hasbg{background-size:cover;background-position:center;color:#fff;border:0;isolation:isolate}
+.bcard.hasbg::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(8,16,32,.74),rgba(8,16,32,.34));z-index:-1}
+.bcard.hasbg p,.bcard.hasbg .bdet{color:#fff}
+.bcard .blogo{max-height:56px;max-width:160px;object-fit:contain;border-radius:8px}
+.bcard .btag{font:700 13px/1.3 var(--f-head);letter-spacing:.08em;text-transform:uppercase;opacity:.9}
+.bcard .bdet{max-width:52ch;font-size:14.5px;opacity:.92}.bcard .bdet p{margin:0 0 8px}
+.bcard.t .bdet{color:var(--muted)}
+section.abg{position:relative;background-size:cover;background-position:center;border-radius:20px;color:#fff;isolation:isolate;padding:48px 28px!important;overflow:hidden}
+section.abg::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(8,16,32,.78),rgba(8,16,32,.5));z-index:-1}
+section.abg h1,section.abg h2,section.abg h3,section.abg p,section.abg .prose,section.abg .eyebrow{color:#fff}
+section.abg .lcard{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff}
+section.abg .lcard p,section.abg .lcard h3,section.abg .lcard .more{color:#fff}
