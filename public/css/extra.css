@@ -174,3 +174,13 @@
 .head .ctBtn{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px rgba(0,0,0,.3)}
 @media (max-width:1080px){.head .nav>a{padding:12px 11px;letter-spacing:.07em}}
 @media (max-width:960px){.head{grid-template-columns:1fr auto}.head .nav{display:none}}
+
+/* header v4: menu options share the middle space in equal-width cells */
+.head{grid-template-columns:auto minmax(0,1fr) auto;gap:20px}
+.head .nav{justify-self:stretch;display:flex;width:100%;gap:0;margin:0 8px}
+.head .nav>a,.head .nav>.has-sub{flex:1 1 0;min-width:0}
+.head .nav>.has-sub{display:flex}.head .nav>.has-sub>a{flex:1}
+.head .nav>a,.head .nav .has-sub>a{text-align:center;padding:14px 8px;border-radius:0}
+.head .nav>a+a,.head .nav>.has-sub+a,.head .nav>a+.has-sub{border-left:1px solid rgba(255,255,255,.14)}
+.head .nav a::after{left:25%;right:25%;bottom:8px}
+@media (max-width:960px){.head{grid-template-columns:1fr auto}}
