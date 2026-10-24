@@ -1,10 +1,10 @@
 # Prabhat Industries website
 
-Website and control panel for PRABHAT INDUSTRIES (SUPREMLITE and STON), hosted free on Cloudflare Pages.
+Website and control panel for PRABHAT INDUSTRIES (SUPREMLITE and STON), hosted free on Cloudflare (Workers with static assets and D1).
 
 - **Public website**: `public/` (home, catalogue with filters, product pages, company pages, enquiry forms)
 - **Control panel**: `public/admin/` at `/admin` (products, categories, varieties, features, homepage slider, pages, menu, brands, enquiries, settings)
-- **Backend**: `functions/` (Cloudflare Pages Functions) and `lib/`, using a D1 database for all content and images
+- **Backend**: `worker.js`, `functions/` and `lib/`, using a D1 database for all content and images
 - **Sign-in**: username and password, stored as Cloudflare secrets
 
 Everything you edit in the control panel appears on the live website within about a minute.

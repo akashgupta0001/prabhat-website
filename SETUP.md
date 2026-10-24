@@ -5,31 +5,28 @@ Allow about 30 minutes. Nothing here costs money.
 
 ## 1. Create the Cloudflare project
 
+Cloudflare's current "Workers & Pages" screen creates a **Worker**. This repository is set up for that: `wrangler.jsonc` and `worker.js` already connect the database named `prabhat-db`, so you do not add the database by hand.
+
 1. Sign up or log in at https://dash.cloudflare.com
-2. Go to **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-3. Choose GitHub, allow access, and select the repository **prabhat-website**.
-4. Build settings: Framework preset **None**, Build command **leave empty**, Build output directory **public**.
-5. Click **Save and Deploy**. The first deploy shows a link like `prabhat-website.pages.dev`. The site will not fully work until steps 2 and 3 are done.
+2. **Workers & Pages** → **Create** → **Import a repository** → choose GitHub → **prabhat-website**.
+3. Project name `prabhat-website`. Leave the build command empty and keep the default deploy command (`npx wrangler deploy`). Click **Deploy**.
+4. Create the database once: **Storage & databases** → **D1 SQL database** → **Create database** named `prabhat-db` (already done for you). The tables and starter content are created automatically the first time anyone opens the site.
 
-## 2. Create the database and connect it
+## 2. Set your admin username and password
 
-1. In Cloudflare go to **Storage & databases** → **D1 SQL database** → **Create database**. Name it `prabhat-db`.
-2. Open your Pages project → **Settings** → **Bindings** → **Add** → **D1 database**.
-3. Variable name: `DB` (capital letters, exactly). Database: `prabhat-db`. Save.
+1. Open the **prabhat-website** Worker → **Settings** → **Variables and Secrets** → **Add**.
+2. Add `ADMIN_USER` with your chosen username. Type **Secret**.
+3. Add `ADMIN_PASSWORD` with a long password (12 or more characters). Type **Secret**.
+4. Save and deploy.
 
-The tables and starter content are created automatically the first time anyone opens the site.
+## 3. Your site address
 
-## 3. Set your admin username and password
-
-1. In the same project: **Settings** → **Variables and secrets** → **Add**.
-2. Add a variable named `ADMIN_USER` with the username you want. Choose type **Secret**.
-3. Add a variable named `ADMIN_PASSWORD` with a long password (12 or more characters). Type **Secret**.
-4. Go to **Deployments** and **Retry deployment** on the latest one (or push any change) so the settings take effect.
+Open **Settings** → **Domains & Routes** to see the free address `prabhat-website.<your-name>.workers.dev`.
 
 ## 4. Check it works
 
-- Open `https://<your-project>.pages.dev` to see the website.
-- Open `https://<your-project>.pages.dev/admin` and sign in.
+- Open your workers.dev address to see the website.
+- Open the same address followed by `/admin` and sign in.
 - In the control panel add a product, then reload the website catalogue.
 
 ## 5. Make supremlite.com open this website
@@ -40,7 +37,7 @@ This moves your domain's DNS (its address book) from GoDaddy to Cloudflare. You 
 2. Cloudflare shows two **nameservers** (like `xxx.ns.cloudflare.com`). Copy both.
 3. In GoDaddy: **My Products** → your domain → **DNS** → **Nameservers** → **Change nameservers** → **Enter my own nameservers** → paste both → Save.
 4. Wait until Cloudflare shows the domain as **Active** (usually under an hour, up to a day).
-5. In your Pages project: **Custom domains** → **Set up a custom domain** → `supremlite.com`, then again for `www.supremlite.com`. Cloudflare adds the records and free HTTPS.
+5. In the Worker: **Settings** → **Domains & Routes** → **Add** → **Custom domain** → `supremlite.com`, then again for `www.supremlite.com`. Cloudflare adds the records and free HTTPS.
 6. Open https://supremlite.com to check. The control panel is at https://supremlite.com/admin.
 
 ## Day to day
@@ -53,7 +50,7 @@ This moves your domain's DNS (its address book) from GoDaddy to Cloudflare. You 
 
 ## Free limits (plenty for this site)
 
-D1 free plan: 5 GB storage and 5 million row reads a day. Pages free plan: unlimited site visits, 100,000 function calls a day. If the site ever grows past that, Cloudflare's paid plan is about $5 a month.
+D1 free plan: 5 GB storage and 5 million row reads a day. Workers free plan: 100,000 requests a day (website files are free and not counted). If the site ever grows past that, Cloudflare's paid plan is about $5 a month.
 
 ## Important notes
 
