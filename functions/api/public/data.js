@@ -14,7 +14,7 @@ export async function onRequestGet({ env, waitUntil }) {
     "SELECT col, id, data FROM docs WHERE col IN ('cats','vars','feats','brands','products','pages','menu','site') AND substr(id,1,1) <> '_'"
   ).all();
   const by = {};
-  for (const r of results) (by[r.col] = by[r.col] || []).push({ id: r.id, ...JSON.parse(r.data) });
+  for (const r of results) (by[r.col] = by[r.col] || []).push({ ...JSON.parse(r.data), id: r.id });
   const site = Object.fromEntries((by.site || []).map((d) => [d.id, d]));
   const settings = site.settings || {};
   const order = (a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.name || a.label || '').localeCompare(String(b.name || b.label || ''));
