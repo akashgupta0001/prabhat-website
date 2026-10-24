@@ -34,16 +34,14 @@ The tables and starter content are created automatically the first time anyone o
 
 ## 5. Make supremlite.com open this website
 
-This moves your domain's DNS (its address book) from GoDaddy to Cloudflare. You keep owning and renewing the domain at GoDaddy. Whatever supremlite.com shows today is replaced by this website once it goes live. Email on the domain keeps working only if its records are copied, so do step 1 carefully.
+This moves your domain's DNS (its address book) from GoDaddy to Cloudflare. You keep owning and renewing the domain at GoDaddy. There is no old website or email on the domain, so there is nothing to protect.
 
-1. **Write down the current records first.** In GoDaddy: **My Products** → your domain → **DNS**. Take a screenshot of the whole records list. Note especially any **MX** records (these run email addresses like name@supremlite.com) and **TXT** records. Skip this and email could stop.
-2. In Cloudflare: **Add a domain** → `supremlite.com` → **Free** plan. Cloudflare scans and copies the records. Compare with your screenshot and add any missing **MX** and **TXT** records. For the old website's records (an **A** record for `@` or a **CNAME** for `www`), you will replace them in step 5.
-3. Cloudflare shows two **nameservers** (like `xxx.ns.cloudflare.com`). In GoDaddy: domain → **Nameservers** → **Change nameservers** → **Enter my own nameservers** → paste both → Save.
-4. Wait until Cloudflare shows the domain as **Active** (usually under an hour, up to a day). The old site keeps showing until then.
-5. In your Pages project: **Custom domains** → **Set up a custom domain** → `supremlite.com`, then again for `www.supremlite.com`. Accept when Cloudflare offers to replace the old website records. It adds the new records and free HTTPS.
+1. In Cloudflare: **Add a domain** → `supremlite.com` → **Free** plan → Continue. If it lists old GoDaddy parking records, you can delete them.
+2. Cloudflare shows two **nameservers** (like `xxx.ns.cloudflare.com`). Copy both.
+3. In GoDaddy: **My Products** → your domain → **DNS** → **Nameservers** → **Change nameservers** → **Enter my own nameservers** → paste both → Save.
+4. Wait until Cloudflare shows the domain as **Active** (usually under an hour, up to a day).
+5. In your Pages project: **Custom domains** → **Set up a custom domain** → `supremlite.com`, then again for `www.supremlite.com`. Cloudflare adds the records and free HTTPS.
 6. Open https://supremlite.com to check. The control panel is at https://supremlite.com/admin.
-
-If something goes wrong, set the nameservers in GoDaddy back to **GoDaddy default** and everything returns to how it was.
 
 ## Day to day
 
