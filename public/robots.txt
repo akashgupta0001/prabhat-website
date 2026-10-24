@@ -1,4 +1,0 @@
-User-agent: *
-Disallow: /admin/
-Disallow: /api/
-Sitemap: https://supremlite.com/sitemap.xml

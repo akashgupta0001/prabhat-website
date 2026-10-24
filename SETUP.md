@@ -32,16 +32,18 @@ The tables and starter content are created automatically the first time anyone o
 - Open `https://<your-project>.pages.dev/admin` and sign in.
 - In the control panel add a product, then reload the website catalogue.
 
-## 5. Connect supremlite.com (GoDaddy → Cloudflare)
+## 5. Give the website its own address (safe, nothing existing is touched)
 
-**Before you start:** if supremlite.com already shows a website or runs email addresses, switching will replace that website and you must keep the email records. Tell me first if you are unsure.
+Your existing supremlite.com website and email stay exactly as they are. We add the new site on a separate address, **catalogue.supremlite.com**, with one extra record in GoDaddy. You do **not** change nameservers.
 
-1. In Cloudflare: **Add a domain** → enter `supremlite.com` → choose the **Free** plan. Cloudflare scans the existing DNS records. Check that any email (MX) records are listed, and keep them.
-2. Cloudflare shows two **nameservers** (for example `xxx.ns.cloudflare.com`). Copy both.
-3. In GoDaddy: **My Products** → your domain → **DNS** → **Nameservers** → **Change nameservers** → **Enter my own nameservers** → paste the two Cloudflare ones → Save.
-4. Wait for Cloudflare to say the domain is **Active** (usually under an hour, sometimes up to a day).
-5. In your Pages project: **Custom domains** → **Set up a custom domain** → `supremlite.com`, then repeat for `www.supremlite.com`. Cloudflare creates the records and the free HTTPS certificate for you.
-6. In the control panel, **Settings** → General Settings: the website address is already `https://supremlite.com`.
+1. In your Pages project: **Custom domains** → **Set up a custom domain** → enter `catalogue.supremlite.com` → Continue. Cloudflare shows a target to point to, which is `<your-project>.pages.dev`.
+2. In GoDaddy: **My Products** → your domain → **DNS** → **Add New Record**. Type **CNAME**, Name `catalogue`, Value `<your-project>.pages.dev`, TTL default. Save.
+3. Back in Cloudflare, press **Check DNS**. Within a few minutes to an hour the address turns **Active** and gets free HTTPS.
+4. In the control panel: **General Settings** → set the website address to `https://catalogue.supremlite.com`.
+
+You can use a different name instead of `catalogue` (for example `shop`). Use the same name in steps 1, 2 and 4.
+
+If you later want the main supremlite.com to show this site, do that as a separate step after checking what the domain does today.
 
 ## Day to day
 
