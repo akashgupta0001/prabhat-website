@@ -33,7 +33,7 @@
       var s = secs[k];
       if (k === 'hero') {
         var title = sl ? sl.title : c.heading, sub = sl ? sl.subtitle : c.sub, label = sl ? sl.btnLabel : 'Explore Catalogue';
-        out += '<div class="pv-hero" style="' + (sl && sl.img ? A.bg(sl.img) : '') + '"><h3>' + esc(title) + '</h3><p>' + esc(sub) + '</p><div class="bt">' + (label ? '<span class="pv-b">' + esc(label) + '</span>' : '') + '<a class="pv-b g" href="' + wa + '" target="_blank" rel="noopener">WhatsApp Enquiry</a></div>' +
+        out += '<div class="pv-hero" style="' + (sl && sl.img ? A.bgL(sl.img) : '') + '"><h3>' + esc(title) + '</h3><p>' + esc(sub) + '</p><div class="bt">' + (label ? '<span class="pv-b">' + esc(label) + '</span>' : '') + '<a class="pv-b g" href="' + wa + '" target="_blank" rel="noopener">WhatsApp Enquiry</a></div>' +
           (slides.length > 1 ? '<div class="pv-dots">' + slides.map(function (_, i) { return '<button class="' + (i === UI.pvi % slides.length ? 'on' : '') + '" data-act="pvSlide" data-i="' + i + '" aria-label="Slide ' + (i + 1) + '"></button>'; }).join('') + '</div>' : '') + '</div>';
       } else if (s && s.on !== false) {
         if (k === 'brands') {
@@ -80,7 +80,7 @@
     var list = '<div class="sl-list">' + sl.map(function (x, n) { return '<button class="sl-th ' + (n === i ? 'on' : '') + '" data-act="selSlide" data-i="' + n + '"><div class="im" style="' + A.bg(x.img) + '"></div><small>Slide ' + (n + 1) + (x.active === false ? ' (off)' : '') + '</small></button>'; }).join('') +
       '<button class="btn pri" data-act="addSlide">' + ic('plus') + ' Add New Slide</button></div>';
     if (!s) return '<div class="hp" style="grid-template-columns:130px 1fr">' + list + '<div class="empty"><b>No slides yet.</b><span>Add a slide to build the homepage banner.</span></div></div>';
-    var prev = '<div><div class="slidebox ' + (s.img ? '' : 'empty') + '" style="' + A.bg(s.img) + '"><b>' + esc(s.title || 'Slide title') + '</b><span>' + esc(s.subtitle) + '</span>' + (s.btnLabel ? '<em>' + esc(s.btnLabel) + '</em>' : '') + '</div>' +
+    var prev = '<div><div class="slidebox ' + (s.img ? '' : 'empty') + '" style="' + A.bgL(s.img) + '"><b>' + esc(s.title || 'Slide title') + '</b><span>' + esc(s.subtitle) + '</span>' + (s.btnLabel ? '<em>' + esc(s.btnLabel) + '</em>' : '') + '</div>' +
       '<div class="bgrow"><label>Background Image (desktop)</label><div class="th" style="' + A.bg(s.img) + '"></div><button class="btn pri sm" data-act="slideImg" data-k="img">Change Image</button><button class="btn dng sm" data-act="slideImgRm" data-k="img">Remove</button></div></div>';
     var f = '<div class="sfields">' + fld('Title', p + 'title', s.title) + fld('Subtitle', p + 'subtitle', s.subtitle) + fld('Button Text', p + 'btnLabel', s.btnLabel) + fld('Button Link', p + 'btnUrl', s.btnUrl) +
       sw('Status', p + 'active', s.active !== false) +

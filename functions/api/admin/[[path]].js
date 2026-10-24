@@ -1,9 +1,9 @@
 import { init, listCol, getDoc, putStmt, delStmt } from '../../../lib/db.js';
 import { json, bad, COLLECTIONS, ID_RE, randomId } from '../../../lib/util.js';
 import { getUser, sameOriginWrite } from '../../../lib/auth.js';
+import { putImage, maxBytes, hasR2, WIDTHS } from '../../../lib/images.js';
 
 const MAX_DOC = 900 * 1024;
-const MAX_IMAGE = 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 async function bust() {
@@ -15,13 +15,6 @@ function check(col, id) {
   if (id !== undefined && !ID_RE.test(id)) return 'Invalid id.';
   return null;
 }
-
-const b64 = (buf) => {
-  let s = '';
-  const a = new Uint8Array(buf);
-  for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode(...a.subarray(i, i + 0x8000));
-  return btoa(s);
-};
 
 export async function onRequest({ request, env, params }) {
   const user = await getUser(request, env);
@@ -86,13 +79,19 @@ export async function onRequest({ request, env, params }) {
   if (a === 'upload' && m === 'POST') {
     const type = (request.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
     if (!IMAGE_TYPES.includes(type)) return bad('Upload a JPG, PNG, WebP or GIF image.');
+    const q = new URL(request.url).searchParams;
+    const of = q.get('of') || '', w = Number(q.get('w')) || 0;
+    if (of && (!/^[a-z0-9]{8,32}$/.test(of) || !WIDTHS.includes(w))) return bad('Bad image size.');
     const buf = await request.arrayBuffer();
-    if (buf.byteLength > MAX_IMAGE) return bad('Image is larger than 1 MB. Please use a smaller image.', 413);
     if (!buf.byteLength) return bad('Empty file.');
-    const newId = randomId(16);
-    await env.DB.prepare('INSERT INTO images (id, mime, data, bytes, created) VALUES (?, ?, ?, ?, ?)')
-      .bind(newId, type, b64(buf), buf.byteLength, new Date().toISOString()).run();
-    return json({ id: newId, url: '/img/' + newId });
+    const max = maxBytes(env);
+    if (buf.byteLength > max) return bad('Photo is larger than ' + Math.round(max / 1024 / 1024 * 10) / 10 + ' MB after optimising. Please use a smaller photo.', 413);
+    const newId = of || randomId(16);
+    await putImage(env, of ? of + '-' + w : newId, type, buf);
+    return json({ id: newId, url: '/img/' + newId, store: hasR2(env) ? 'r2' : 'd1', maxBytes: max });
+  }
+  if (a === 'upload' && m === 'GET') {
+    return json({ store: hasR2(env) ? 'r2' : 'd1', maxBytes: maxBytes(env), widths: WIDTHS });
   }
   return bad('Not found.', 404);
 }

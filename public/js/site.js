@@ -6,6 +6,10 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var img = function (id) { return '/img/' + encodeURIComponent(id); };
+  // Responsive HD photos: the browser picks the sharpest copy needed for the screen.
+  var CARD = '(max-width: 560px) 100vw, (max-width: 900px) 50vw, 360px';
+  var srcset = function (id) { var u = img(id); return u + '?w=480 480w, ' + u + '?w=960 960w, ' + u + '?w=1600 1600w, ' + u + ' 2560w'; };
+  var pic = function (id, sizes) { return 'src="' + img(id) + '?w=960" srcset="' + srcset(id) + '" sizes="' + (sizes || CARD) + '" decoding="async"'; };
 
   var DEFAULTS = { settings: { company: 'PRABHAT INDUSTRIES', phone: '9818185161', whatsapp: '9818185161', location: 'Bahadurgarh, Haryana, India' }, home: null, cats: [], vars: [], feats: [], brands: [], menu: [], pages: [], products: [] };
   var D = DEFAULTS;
@@ -132,7 +136,7 @@
   function card(p) {
     var url = '/product?s=' + encodeURIComponent(p.slug || p.id), el = document.createElement('article');
     el.className = 'pcard';
-    el.innerHTML = '<a class="imgl" href="' + url + '" aria-label="View ' + esc(p.name) + '">' + (p.img ? '<img class="pimg" loading="lazy" alt="' + esc(p.name) + '" src="' + img(p.img) + '">' : PH) + '</a>' +
+    el.innerHTML = '<a class="imgl" href="' + url + '" aria-label="View ' + esc(p.name) + '">' + (p.img ? '<img class="pimg" loading="lazy" alt="' + esc(p.name) + '" ' + pic(p.img) + '>' : PH) + '</a>' +
       '<div class="pbody"><span class="code">' + esc(p.sku) + '</span><h3><a href="' + url + '">' + esc(p.name) + '</a></h3>' +
       '<span class="meta">' + esc([brandName(p.brand), catOf(p)].filter(Boolean).join(' · ')) + '</span>' + priceHTML(p) +
       '<div class="pbtns"><a class="btn ghost" href="' + url + '">View details</a><a class="btn accent" target="_blank" rel="noopener" href="' + productWa(p) + '">WhatsApp</a></div></div>';
@@ -206,7 +210,7 @@
       if (s.on === false) return;
       if (k === 'categories') {
         var cs = D.cats.filter(function (c) { return c.filterVisible !== false; }).slice(0, s.count || 6);
-        if (cs.length) out += '<section>' + sh('Browse', s.heading || 'Explore our footwear collection', s.desc) + '<div class="tiles tiles-c">' + cs.map(function (c) { return '<a class="tile" href="/catalogue?cat=' + encodeURIComponent(c.slug || c.id) + '">' + (c.image ? '<img class="pimg" loading="lazy" alt="" src="' + img(c.image) + '">' : '<div class="ph">' + PHSVG + '</div>') + '<h3>' + esc(c.name) + '</h3><span class="more">Explore more</span></a>'; }).join('') + '</div></section>';
+        if (cs.length) out += '<section>' + sh('Browse', s.heading || 'Explore our footwear collection', s.desc) + '<div class="tiles tiles-c">' + cs.map(function (c) { return '<a class="tile" href="/catalogue?cat=' + encodeURIComponent(c.slug || c.id) + '">' + (c.image ? '<img class="pimg" loading="lazy" alt="" ' + pic(c.image) + '>' : '<div class="ph">' + PHSVG + '</div>') + '<h3>' + esc(c.name) + '</h3><span class="more">Explore more</span></a>'; }).join('') + '</div></section>';
       } else if (k === 'featured') {
         var ps = D.products.filter(function (p) { return s.mode === 'home' ? p.home : s.mode === 'new' ? true : p.featured; });
         if (s.mode === 'new') ps.sort(function (a, b) { return String(b.created).localeCompare(String(a.created)); });
@@ -217,7 +221,7 @@
         if (D.brands.length) out += '<section style="padding-top:0">' + sh('Our brands', s.heading || 'Our brands', s.desc) + '<div class="brands">' + D.brands.map(function (b, i) {
           var href = b.slug === 'supremlite' || b.slug === 'ston' ? '/' + b.slug : '/catalogue?brand=' + encodeURIComponent(b.id);
           var bg = b.bg ? ' hasbg' : '', st = b.bg ? ' style="background-image:url(' + img(b.bg) + ')"' : '', dark = b.bg || i % 2 === 0;
-          return '<div class="bcard ' + (i % 2 ? 't' : 's') + bg + '"' + st + '>' + (b.logo ? '<img class="blogo" alt="' + esc(b.name) + ' logo" loading="lazy" src="' + img(b.logo) + '">' : '') + '<span class="eyebrow"' + (dark ? ' style="color:#fff;opacity:.8"' : '') + '>Brand</span><h3>' + esc(b.name) + '</h3>' + (b.tagline ? '<strong class="btag">' + esc(b.tagline) + '</strong>' : '') + '<p>' + esc(b.desc || '') + '</p>' + (b.details ? '<div class="bdet">' + para(b.details) + '</div>' : '') + '<a class="btn ' + (i % 2 ? 'brand' : 'accent') + '" href="' + href + '">View ' + esc(b.name) + '</a></div>';
+          return '<div class="bcard ' + (i % 2 ? 't' : 's') + bg + '"' + st + '>' + (b.logo ? '<img class="blogo" alt="' + esc(b.name) + ' logo" loading="lazy" ' + pic(b.logo, '160px') + '>' : '') + '<span class="eyebrow"' + (dark ? ' style="color:#fff;opacity:.8"' : '') + '>Brand</span><h3>' + esc(b.name) + '</h3>' + (b.tagline ? '<strong class="btag">' + esc(b.tagline) + '</strong>' : '') + '<p>' + esc(b.desc || '') + '</p>' + (b.details ? '<div class="bdet">' + para(b.details) + '</div>' : '') + '<a class="btn ' + (i % 2 ? 'brand' : 'accent') + '" href="' + href + '">View ' + esc(b.name) + '</a></div>';
         }).join('') + '</div></section>';
       } else if (k === 'about') {
         out += '<section' + (s.img ? ' class="abg" style="background-image:url(' + img(s.img) + ')"' : ' style="padding-top:0"') + '>' + sh('Company profile', s.heading || 'About us') + '<div class="two"><div class="prose" style="margin:0">' + para(s.text) + '</div><div class="cards3" style="grid-template-columns:1fr"><a class="lcard" href="/about"><h3>About us</h3><p>Our business, our brands and how we work.</p><span class="more">Read more</span></a><a class="lcard" href="/mission-vision"><h3>Mission &amp; vision</h3><p>What we aim to do and where we want to go.</p><span class="more">Read more</span></a><a class="lcard" href="/values"><h3>Our values</h3><p>Customer focus, integrity, selection and relationships.</p><span class="more">Read more</span></a></div></div></section>';
@@ -292,6 +296,18 @@
   }
 
   /* ---------- product page ---------- */
+  var PDP = '(max-width: 860px) 100vw, 50vw';
+  // Full-screen viewer with the HD master photo; pinch or double-tap to zoom on phones.
+  function zoom(pics, i, name) {
+    var o = document.createElement('div'); o.className = 'zoomv'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Photo viewer');
+    var show = function () { o.querySelector('img').src = img(pics[i]); o.querySelector('.zc').textContent = (i + 1) + ' / ' + pics.length; };
+    o.innerHTML = '<button type="button" class="zx" aria-label="Close">×</button>' + (pics.length > 1 ? '<button type="button" class="zp" aria-label="Previous photo">‹</button><button type="button" class="zn" aria-label="Next photo">›</button>' : '') + '<div class="zs"><img alt="' + esc(name) + '"></div><span class="zc"></span>';
+    var close = function () { o.remove(); document.removeEventListener('keydown', key); document.body.style.overflow = ''; };
+    var step = function (d) { i = (i + d + pics.length) % pics.length; show(); };
+    var key = function (e) { if (e.key === 'Escape') close(); if (e.key === 'ArrowRight') step(1); if (e.key === 'ArrowLeft') step(-1); };
+    o.onclick = function (e) { var t = e.target; if (t.classList.contains('zx') || t === o) close(); else if (t.classList.contains('zp')) step(-1); else if (t.classList.contains('zn')) step(1); else if (t.tagName === 'IMG') t.classList.toggle('big'); };
+    document.addEventListener('keydown', key); document.body.appendChild(o); document.body.style.overflow = 'hidden'; show(); o.querySelector('.zx').focus();
+  }
   function renderProduct() {
     var root = $('#product'); if (!root) return;
     var s = new URLSearchParams(location.search).get('s') || '', p = D.products.filter(function (x) { return x.slug === s || x.id === s; })[0];
@@ -301,15 +317,17 @@
     var spec = function (k, v) { return '<div><dt>' + k + '</dt><dd>' + (v && String(v).length ? esc(v) : cd) + '</dd></div>'; };
     var price = D.settings.showPrices && p.price !== '' && p.price != null ? '<div><dt>Price</dt><dd>₹' + Number(p.price).toLocaleString('en-IN') + '</dd></div>' : '';
     root.innerHTML = '<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <a href="/catalogue">Catalogue</a>' + (cats[0] ? ' <span>/</span> <a href="/catalogue?cat=' + encodeURIComponent(cats[0].slug || cats[0].id) + '">' + esc(cats[0].name) + '</a>' : '') + ' <span>/</span> <span>' + esc(p.name) + '</span></nav>' +
-      '<div class="pdp"><div class="gal">' + (pics.length ? '<img class="main" id="mainimg" alt="' + esc(p.name) + '" src="' + img(pics[0]) + '">' : PH) + (pics.length > 1 ? '<div class="thumbs">' + pics.map(function (x, i) { return '<button type="button" data-i="' + i + '" aria-label="Photo ' + (i + 1) + '" aria-current="' + (i === 0) + '"><img alt="" src="' + img(x) + '"></button>'; }).join('') + '</div>' : '') + '</div>' +
+      '<div class="pdp"><div class="gal">' + (pics.length ? '<button type="button" class="zoomer" id="zoombtn" aria-label="Zoom photo"><img class="main" id="mainimg" alt="' + esc(p.name) + '" ' + pic(pics[0], PDP) + '><span class="zhint" aria-hidden="true">Tap to zoom</span></button>' : PH) + (pics.length > 1 ? '<div class="thumbs">' + pics.map(function (x, i) { return '<button type="button" data-i="' + i + '" aria-label="Photo ' + (i + 1) + '" aria-current="' + (i === 0) + '"><img alt="" src="' + img(x) + '?w=480"></button>'; }).join('') + '</div>' : '') + '</div>' +
       '<div><span class="brandtag">' + esc(p.sku) + '</span><h1>' + esc(p.name) + '</h1><div class="chips">' + (brandName(p.brand) ? '<span>' + esc(brandName(p.brand)) + '</span>' : '') + cats.map(function (c) { return '<a href="/catalogue?cat=' + encodeURIComponent(c.slug || c.id) + '">' + esc(c.name) + '</a>'; }).join('') + '</div>' +
       (p.desc ? '<p class="desc">' + esc(p.desc) + '</p>' : '') +
       '<dl class="spec">' + spec('Brand', brandName(p.brand)) + spec('Model code', p.sku) + spec('Category', names(D.cats, p.catIds).join(', ')) + spec('Variety', names(D.vars, p.varIds).join(', ')) + spec('Features', names(D.feats, p.featIds).join(', ')) + spec('Sizes', (p.sizes || []).join(', ')) + spec('Colours', (p.colours || []).join(', ')) + spec('Material', p.material) + price + '</dl>' +
       '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px"><a class="btn accent" target="_blank" rel="noopener" href="' + productWa(p) + '">Enquire on WhatsApp</a><a class="btn ghost" href="#enquire">Send an enquiry</a></div>' +
       '<p class="fine" style="font-size:13px;color:var(--muted);margin-top:14px">Availability, pricing, minimum order quantities and terms are confirmed by ' + esc(COMPANY) + '.</p>' +
       '<div class="enqbox" id="enquire"><h2 style="font-size:1.1rem;margin-bottom:12px">Enquire about this model</h2><div id="pform"></div></div></div></div><div id="related"></div>';
+    var cur = 0, zb = $('#zoombtn');
+    if (zb) zb.onclick = function () { zoom(pics, cur, p.name); };
     Array.prototype.forEach.call(root.querySelectorAll('.thumbs button'), function (b) {
-      b.onclick = function () { $('#mainimg').src = img(pics[+b.dataset.i]); Array.prototype.forEach.call(root.querySelectorAll('.thumbs button'), function (x) { x.setAttribute('aria-current', String(x === b)); }); };
+      b.onclick = function () { var m = $('#mainimg'), id = pics[+b.dataset.i]; m.srcset = srcset(id); m.src = img(id) + '?w=960'; cur = +b.dataset.i; Array.prototype.forEach.call(root.querySelectorAll('.thumbs button'), function (x) { x.setAttribute('aria-current', String(x === b)); }); };
     });
     enquiryForm($('#pform'), { product: p, message: 'I would like to enquire about ' + p.name + ' (model ' + p.sku + '). Please share sizes, colours, price and minimum order quantity.' });
     var rel = D.products.filter(function (x) { return x.id !== p.id && (x.catIds || []).some(function (c) { return (p.catIds || []).indexOf(c) > -1; }); }).slice(0, 4);
@@ -322,7 +340,7 @@
     var root = $('#cms'); if (!root) return;
     var s = new URLSearchParams(location.search).get('s') || '', p = D.pages.filter(function (x) { return x.slug === s; })[0];
     if (!p) { root.innerHTML = '<div class="empty"><b>This page is not available.</b><br><br><a class="btn brand" href="/">Back to home</a></div>'; setMeta('Page not found | ' + COMPANY); return; }
-    root.innerHTML = '<div class="pagehero"><span class="eyebrow">' + esc(COMPANY) + '</span><h1>' + esc(p.title) + '</h1></div><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <span>' + esc(p.title) + '</span></nav><section style="padding-top:36px"><div class="richpage">' + (p.img ? '<img class="feat" alt="" src="' + img(p.img) + '">' : '') + '<div class="prose" style="margin:0">' + para(p.content) + '</div></div></section>';
+    root.innerHTML = '<div class="pagehero"><span class="eyebrow">' + esc(COMPANY) + '</span><h1>' + esc(p.title) + '</h1></div><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <span>' + esc(p.title) + '</span></nav><section style="padding-top:36px"><div class="richpage">' + (p.img ? '<img class="feat" alt="" ' + pic(p.img, '(max-width: 960px) 100vw, 900px') + '>' : '') + '<div class="prose" style="margin:0">' + para(p.content) + '</div></div></section>';
     setMeta((p.seoTitle || p.title) + ' | ' + COMPANY, p.seoDesc);
   }
 

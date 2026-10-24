@@ -82,27 +82,81 @@
     });
   });
 
-  /* images: shrink big photos in the browser before upload so pages stay fast */
-  function shrink(file) {
-    var keep = /^image\/(jpeg|png|webp)$/.test(file.type) && file.size <= 350 * 1024;
-    if (keep || file.type === 'image/gif' && file.size <= 900 * 1024) return Promise.resolve(file);
-    return createImageBitmap(file).then(function (bm) {
-      var alpha = file.type !== 'image/jpeg', type = alpha ? 'image/webp' : 'image/jpeg', scale = Math.min(1, 1600 / Math.max(bm.width, bm.height)), q = 0.86;
-      function pass() {
-        var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bm.width * scale)); c.height = Math.max(1, Math.round(bm.height * scale));
-        var x = c.getContext('2d'); if (!alpha) { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); } x.drawImage(bm, 0, 0, c.width, c.height);
-        return new Promise(function (res) { c.toBlob(function (b) { res(b); }, type, q); }).then(function (b) {
-          if (b && b.size > 900 * 1024 && (q > 0.5 || scale > 0.4)) { q = Math.max(0.5, q - 0.12); scale *= 0.85; return pass(); }
-          return b;
+  /* images: every upload is kept in HD.
+     - HD master: up to 2560px on the long side, WebP/JPEG at 92% quality (never upscaled)
+     - sharp smaller copies at 480, 960 and 1600px wide for cards and phones
+     The website picks the right copy for each screen, so photos stay crisp without slow pages. */
+  var MASTER = 2560, WIDTHS = [480, 960, 1600], limits = null;
+  function getLimits() {
+    if (!limits) limits = api('GET', 'upload').catch(function () { return { maxBytes: 1400 * 1024, widths: WIDTHS }; });
+    return limits;
+  }
+  function canvasOf(src, w, h) {
+    // high-quality downscale: halve step by step, then draw the final size
+    var cur = src, cw = src.width, ch = src.height;
+    while (cw / 2 >= w && ch / 2 >= h) {
+      var t = document.createElement('canvas'); t.width = Math.round(cw / 2); t.height = Math.round(ch / 2);
+      var tx = t.getContext('2d'); tx.imageSmoothingEnabled = true; tx.imageSmoothingQuality = 'high'; tx.drawImage(cur, 0, 0, t.width, t.height);
+      cur = t; cw = t.width; ch = t.height;
+    }
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    var x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(cur, 0, 0, w, h);
+    return c;
+  }
+  function hasAlpha(bm) {
+    var c = document.createElement('canvas'), s = Math.min(1, 256 / Math.max(bm.width, bm.height));
+    c.width = Math.max(1, Math.round(bm.width * s)); c.height = Math.max(1, Math.round(bm.height * s));
+    var x = c.getContext('2d'); x.drawImage(bm, 0, 0, c.width, c.height);
+    var d = x.getImageData(0, 0, c.width, c.height).data;
+    for (var i = 3; i < d.length; i += 4) if (d[i] < 250) return true;
+    return false;
+  }
+  function encode(c, alpha, q) {
+    var blob = function (type) { return new Promise(function (res) { c.toBlob(function (b) { res(b); }, type, q); }); };
+    return blob('image/webp').then(function (b) {
+      if (b && b.type === 'image/webp') return b;           // most browsers
+      return alpha ? blob('image/png') : blob('image/jpeg'); // older Safari cannot make WebP
+    });
+  }
+  function prepare(file) {
+    if (file.type === 'image/gif') return Promise.resolve({ master: file, copies: [] });
+    return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return createImageBitmap(file); }).then(function (bm) {
+      var alpha = file.type !== 'image/jpeg' && hasAlpha(bm);
+      var src = document.createElement('canvas'); src.width = bm.width; src.height = bm.height;
+      var sx = src.getContext('2d'); if (!alpha) { sx.fillStyle = '#fff'; sx.fillRect(0, 0, src.width, src.height); } sx.drawImage(bm, 0, 0);
+      var size = function (edge) { var s = Math.min(1, edge / Math.max(src.width, src.height)); return [Math.max(1, Math.round(src.width * s)), Math.max(1, Math.round(src.height * s))]; };
+      return getLimits().then(function (lim) {
+        var max = lim.maxBytes || 1400 * 1024;
+        // Try full HD first; only if the file is too big for storage, step down gently.
+        // Never below 1800px or 85% quality, so photos never look broken.
+        var tries = [[MASTER, 0.92], [MASTER, 0.88], [MASTER, 0.85], [2200, 0.85], [2000, 0.85], [1800, 0.85]];
+        function attempt(i) {
+          var t = tries[i], wh = size(t[0]);
+          return encode(canvasOf(src, wh[0], wh[1]), alpha, t[1]).then(function (b) {
+            if (b.size <= max) return { blob: b, width: wh[0] };
+            if (i + 1 < tries.length) return attempt(i + 1);
+            throw new Error('This photo is too detailed to store in HD. Please crop it or use a smaller file.');
+          });
+        }
+        return attempt(0).then(function (m) {
+          var widths = WIDTHS.filter(function (w) { return w < m.width; });
+          return Promise.all(widths.map(function (w) {
+            var h = Math.max(1, Math.round(src.height * w / src.width));
+            return encode(canvasOf(src, w, h), alpha, 0.88).then(function (b) { return { w: w, blob: b }; });
+          })).then(function (copies) { return { master: m.blob, copies: copies }; });
         });
-      }
-      return pass();
+      });
     });
   }
   var assets = {
     upload: function (file) {
-      return shrink(file).then(function (blob) {
-        return api('POST', 'upload', blob, { 'content-type': blob.type || file.type });
+      return prepare(file).then(function (p) {
+        return api('POST', 'upload', p.master, { 'content-type': p.master.type || file.type }).then(function (r) {
+          // smaller copies are optional: if one fails, the site falls back to the HD master
+          return Promise.all(p.copies.map(function (c) {
+            return api('POST', 'upload?of=' + r.id + '&w=' + c.w, c.blob, { 'content-type': c.blob.type }).catch(function () {});
+          })).then(function () { return r; });
+        });
       });
     },
     list: function () { return api('GET', 'storage'); }

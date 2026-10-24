@@ -17,7 +17,8 @@ window.A = window.A || {};
   A.fdate = function (iso) { if (!iso) return '—'; var d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); };
   A.money = function (n) { return n === '' || n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN'); };
   A.imgUrl = function (id) { return id ? '/img/' + id : ''; };
-  A.bg = function (id) { return id ? 'background-image:url(' + A.imgUrl(id) + ')' : ''; };
+  A.bg = function (id) { return id ? 'background-image:url(' + A.imgUrl(id) + '?w=480)' : ''; };
+  A.bgL = function (id) { return id ? 'background-image:url(' + A.imgUrl(id) + '?w=960)' : ''; };
 
   var P = {
     home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
@@ -114,7 +115,7 @@ window.A = window.A || {};
       if (!A.assets) { A.toast('Image upload is not available right now.', 'err'); return; }
       if (!/^image\/(png|jpeg|webp|gif)$/.test(f.type)) { A.toast('Choose a PNG, JPG, WebP or GIF image.', 'err'); return; }
       if (f.size > 25 * 1024 * 1024) { A.toast('Image is larger than 25 MB. Please choose a smaller one.', 'err'); return; }
-      try { var r = await A.assets.upload(f); cb(r.id); } catch (e) { A.toast('Upload failed: ' + A.errMsg(e), 'err'); }
+      try { A.toast('Optimising and uploading HD photo…'); var r = await A.assets.upload(f); cb(r.id); A.toast('Photo uploaded in HD.'); } catch (e) { A.toast('Upload failed: ' + A.errMsg(e), 'err'); }
     };
     i.click();
   };
