@@ -258,3 +258,9 @@ section.abg .lcard p,section.abg .lcard h3,section.abg .lcard .more{color:#fff}
 .foot .fname b{font:900 clamp(1.5rem,3.2vw,2.15rem)/1 var(--f-head);letter-spacing:.03em;text-transform:uppercase;background:linear-gradient(95deg,#fff 30%,#FFB4A3 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
 .foot .fname small{font:700 11px/1 var(--f-head);letter-spacing:.34em;color:var(--accent);filter:brightness(1.25)}
 @media (max-width:480px){.foot .fname b{font-size:1.5rem}.foot .fb .mark{width:50px;height:50px;font-size:26px}}
+
+/* footer brand: smaller */
+.foot .fb .mark{width:44px;height:44px;font-size:22px;border-radius:12px}
+.foot .fname b{font-size:clamp(1.05rem,1.8vw,1.3rem);letter-spacing:.04em;white-space:nowrap}
+.foot .fname small{font-size:10px}
+@media (max-width:480px){.foot .fname b{font-size:1.05rem}.foot .fb .mark{width:40px;height:40px;font-size:20px}}
