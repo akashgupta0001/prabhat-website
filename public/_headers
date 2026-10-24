@@ -1,0 +1,13 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+/api/*
+  X-Robots-Tag: noindex
+/css/*
+  Cache-Control: public, max-age=3600
+/js/*
+  Cache-Control: public, max-age=300

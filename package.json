@@ -1,0 +1,7 @@
+{
+  "name": "prabhat-website",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "PRABHAT INDUSTRIES website and control panel on Cloudflare Pages"
+}
