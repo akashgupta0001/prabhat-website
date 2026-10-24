@@ -7,7 +7,8 @@
     { g: 'Website Management', items: [['homepage', 'Homepage Builder', 'grid', true], ['banner', 'Banner & Slider', 'image'], ['sections', 'Sections & Blocks', 'layers'], ['pages', 'Pages', 'file'], ['menu', 'Menu Management', 'menu'], ['brands', 'Brand Management', 'tag']] },
     { g: 'Catalogue Management', items: [['products', 'Products', 'box', true], ['categories', 'Categories', 'folder'], ['varieties', 'Varieties', 'palette'], ['features', 'Features', 'star'], ['bulk', 'Bulk Upload', 'upload'], ['inventory', 'Inventory', 'wh']] },
     { g: 'Enquiries & Orders', items: [['enq', 'Customer Enquiries', 'msg', true], ['wenq', 'Wholesale Enquiries', 'mail']] },
-    { g: 'Settings', items: [['settings', 'General Settings', 'cog'], ['seo', 'SEO Settings', 'search'], ['users', 'Users & Roles', 'users']] }
+    { g: 'Settings', items: [['settings', 'General Settings', 'cog'], ['seo', 'SEO Settings', 'search'], ['users', 'Users & Roles', 'users']] },
+    { g: 'My Workspace', items: [['notes', 'Notes', 'file']] }
   ];
   A.syncNav = function () {
     NAV.forEach(function (g) { (g.items || []).forEach(function (it) { var k = { categories: 'cats', varieties: 'vars', features: 'feats' }[it[0]]; if (k) it[1] = A.TAX[k].plural; }); });
@@ -37,6 +38,7 @@
     if (!A.db) return '<div class="card empty"><b>The database is not reachable.</b><span>Check your internet connection, then reload this page and sign in again.</span></div>';
     if (!A.H) A.H = A.defHome();
     if (r === 'categories') return V.taxonomy('cats'); if (r === 'varieties') return V.taxonomy('vars'); if (r === 'features') return V.taxonomy('feats');
+    if (r === 'notes') return V.notes();
     if (r === 'enq' || r === 'wenq') return V.enquiries(r);
     return (V[r] || V.dashboard)();
   }
@@ -55,6 +57,9 @@
   function dataOf(t) { return t.dataset; }
 
   var ACT = {
+    addNote: function () { A.noteForm(); }, editNote: function (t) { A.noteForm(t.dataset.id); }, saveNote: function (t) { A.saveNote(t.dataset.id); }, delNote: function (t) { A.delNote(t.dataset.id); },
+    pinNote: function (t) { var n = S.notes.find(function (x) { return x.id === t.dataset.id; }); if (n) A.run(function () { return A.col('notes').doc(n.id).update({ pinned: !n.pinned }); }); },
+    noteColor: function (t) { A.NC = t.dataset.c; Array.prototype.forEach.call(document.querySelectorAll('#modal .ncol button'), function (b) { b.classList.toggle('on', b.dataset.c === A.NC); }); },
     go: function (t) { go(t.dataset.r); }, grp: function (t) { closed[t.dataset.g] = !closed[t.dataset.g]; A.render(); },
     toggleNav: function () { document.body.classList.toggle('nav-open'); },
     closeModal: function () { A.closeModal(); },
@@ -129,6 +134,7 @@
     pq: function (t) { UI.prod.q = t.value; UI.prod.page = 1; UI.dp.page = 1; A.rePlist(); },
     pf: function (t) { var f = t.dataset.f; UI.prod[f] = f === 'size' ? +t.value : t.value; UI.prod.page = 1; A.rePlist(); },
     fq: function (t) { UI.fq = t.value; var pos = t.selectionStart; A.render(); var n = A.$('[data-act-input="fq"]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } },
+    nq: function (t) { UI.nq = t.value; A.$('#notelist').innerHTML = A.noteList(A.noteItems()); },
     tq: function (t) { UI.tx[t.dataset.k] = Object.assign({ q: '', status: '', sort: 'order' }, UI.tx[t.dataset.k], { q: t.value }); A.$('#txlist').innerHTML = A.txList(t.dataset.k); },
     tstatus: function (t) { UI.tx[t.dataset.k] = Object.assign({ q: '', status: '', sort: 'order' }, UI.tx[t.dataset.k], { status: t.value }); A.$('#txlist').innerHTML = A.txList(t.dataset.k); },
     tsort: function (t) { UI.tx[t.dataset.k] = Object.assign({ q: '', status: '', sort: 'order' }, UI.tx[t.dataset.k], { sort: t.value }); A.$('#txlist').innerHTML = A.txList(t.dataset.k); },
@@ -178,8 +184,8 @@
     if (A.assets) { try { var l = await A.assets.list(); A.storage = l.usage; } catch (e) { /* optional */ } }
     var onErr = function (e) { A.toast('Live data error: ' + A.errMsg(e), 'err'); };
     A.subGroup = function (n) { A.col(n).onSnapshot(function (snap) { S[n] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); S[n].sort(A.byOrder); A.refresh(); }, onErr); };
-    ['cats', 'vars', 'feats', 'brands', 'products', 'pages', 'menu', 'enq'].forEach(function (n) {
-      A.col(n).onSnapshot(function (snap) { S[n] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); if (n !== 'products' && n !== 'enq' && n !== 'pages') S[n].sort(A.byOrder); S.loaded[n] = true; A.refresh(); }, onErr);
+    ['cats', 'vars', 'feats', 'brands', 'products', 'pages', 'menu', 'enq', 'notes'].forEach(function (n) {
+      A.col(n).onSnapshot(function (snap) { S[n] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }); if (n !== 'products' && n !== 'enq' && n !== 'pages' && n !== 'notes') S[n].sort(A.byOrder); S.loaded[n] = true; A.refresh(); }, onErr);
     });
     A.col('activity').orderBy('ts', 'desc').limit(30).onSnapshot(function (snap) { S.activity = snap.docs.map(function (d) { return d.data(); }); A.refresh(); }, onErr);
     A.db.doc('site/home_draft').onSnapshot(function (s) { if (!A.dirty) A.H = s.exists ? Object.assign(A.defHome(), s.data()) : A.defHome(); S.loaded.draft = true; A.refresh(); }, onErr);

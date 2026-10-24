@@ -178,3 +178,45 @@
       '<p class="cell-s">Sign-in locks for 15 minutes after 8 wrong attempts from the same connection. Sessions last 12 hours.</p></div>';
   };
 })(window.A);
+
+/* ----- private notes (admin only; never shown on the public website) ----- */
+(function (A) {
+  'use strict';
+  var esc = A.esc, ic = A.ic, S = A.S, UI = A.UI, V = A.V;
+  var COLORS = { yellow: '#FFF3B0', blue: '#D6E8FF', green: '#D5F5DC', pink: '#FFD9E4', plain: '' };
+  UI.nq = UI.nq || '';
+  A.noteItems = function () {
+    var q = UI.nq.toLowerCase();
+    return S.notes.filter(function (n) { return !q || ((n.title || '') + ' ' + (n.body || '')).toLowerCase().indexOf(q) > -1; })
+      .sort(function (a, b) { return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || String(b.updated).localeCompare(String(a.updated)); });
+  };
+  V.notes = function () {
+    var l = A.noteItems();
+    return '<div class="page-head"><div><h2>Notes</h2><p>Private notes for you and your team. They stay inside this control panel and are never shown on the website.</p></div><span class="sp"></span><button class="btn pri" data-act="addNote">' + ic('plus') + ' New note</button></div>' +
+      '<div class="card"><div class="tools"><input type="search" placeholder="Search notes" aria-label="Search notes" data-act-input="nq" value="' + esc(UI.nq) + '"></div><div id="notelist" class="pad">' + A.noteList(l) + '</div></div>';
+  };
+  A.noteList = function (l) {
+    if (!l.length) return '<div class="empty"><b>' + (S.notes.length ? 'No notes match.' : 'No notes yet.') + '</b><span>' + (S.notes.length ? 'Clear the search.' : 'Write reminders, to-dos, product ideas or anything you want to keep here.') + '</span>' + (S.notes.length ? '' : '<button class="btn pri" data-act="addNote">' + ic('plus') + ' New note</button>') + '</div>';
+    return '<div class="ngrid">' + l.map(function (n) {
+      return '<div class="ncard" style="' + (COLORS[n.color] ? 'background:' + COLORS[n.color] : '') + '"><div class="nh"><b>' + esc(n.title || 'Untitled') + '</b><span class="acts"><button class="ibtn' + (n.pinned ? ' on' : '') + '" data-act="pinNote" data-id="' + n.id + '" aria-label="' + (n.pinned ? 'Unpin' : 'Pin') + '" title="' + (n.pinned ? 'Unpin' : 'Pin to top') + '">' + ic('star') + '</button><button class="ibtn" data-act="editNote" data-id="' + n.id + '" aria-label="Edit">' + ic('edit') + '</button><button class="ibtn r" data-act="delNote" data-id="' + n.id + '" aria-label="Delete">' + ic('trash') + '</button></span></div>' +
+        '<div class="nb">' + esc(n.body || '') + '</div><small>' + (n.pinned ? 'Pinned · ' : '') + 'Updated ' + A.fdate(n.updated) + '</small></div>';
+    }).join('') + '</div>';
+  };
+  A.noteForm = function (id) {
+    var n = id ? S.notes.find(function (x) { return x.id === id; }) : { color: 'yellow' }; if (!n) return; A.NC = n.color || 'plain';
+    A.modal('<div class="sh-h"><h3>' + (id ? 'Edit note' : 'New note') + '</h3><button class="ic-btn" data-act="closeModal" aria-label="Close">' + ic('x') + '</button></div><div class="sh-b">' +
+      '<label class="fld"><span>Title</span><input id="nt_title" value="' + esc(n.title || '') + '" placeholder="e.g. Call the sole supplier"></label>' +
+      '<label class="fld"><span>Note</span><textarea id="nt_body" rows="9" placeholder="Write your note here...">' + esc(n.body || '') + '</textarea></label>' +
+      '<div class="fld"><span>Colour</span><div class="ncol">' + Object.keys(COLORS).map(function (c) { return '<button type="button" data-act="noteColor" data-c="' + c + '" class="' + (A.NC === c ? 'on' : '') + '" style="background:' + (COLORS[c] || '#fff') + '" aria-label="' + c + '"></button>'; }).join('') + '</div></div><p class="err" id="nt_err" role="alert"></p></div>' +
+      '<div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveNote" data-id="' + (id || '') + '">Save note</button></div>', 'sm');
+  };
+  A.saveNote = async function (id) {
+    var title = A.mv('nt_title').trim(), body = A.mv('nt_body').trim(); if (!title && !body) { A.$('#nt_err').textContent = 'Write something first.'; return; }
+    var o = Object.assign({}, id ? S.notes.find(function (x) { return x.id === id; }) : {}, { id: id || undefined, title: title, body: body, color: A.NC || 'plain' });
+    if (await A.run(function () { return A.save('notes', o); }, 'Note saved.')) A.closeModal();
+  };
+  A.delNote = function (id) {
+    var n = S.notes.find(function (x) { return x.id === id; }); if (!n) return;
+    A.confirmBox({ title: 'Delete this note?', body: '<p><b>' + esc(n.title || 'Untitled') + '</b> will be deleted permanently.</p>', actions: [{ label: 'Delete', cls: 'dng', fn: async function () { if (await A.run(function () { return A.del('notes', id); }, 'Note deleted.')) A.closeModal(); } }] });
+  };
+})(window.A);

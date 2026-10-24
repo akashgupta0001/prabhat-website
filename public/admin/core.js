@@ -65,7 +65,7 @@ window.A = window.A || {};
   A.ic = function (n, cls) { return '<svg class="i ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || '') + '</svg>'; };
 
   /* state */
-  A.S = { cats: [], vars: [], feats: [], brands: [], products: [], pages: [], menu: [], enq: [], activity: [], settings: {}, live: null, loaded: {} };
+  A.S = { cats: [], vars: [], feats: [], brands: [], products: [], pages: [], menu: [], enq: [], notes: [], activity: [], settings: {}, live: null, loaded: {} };
   A.H = null; A.dirty = false; A.db = null; A.assets = null; A.user = null; A.me = null; A.role = 'Super Admin';
   A.UI = { route: 'dashboard', tab: 'hero', sel: 0, dev: 'desktop', pvMode: 'draft', pvi: 0, ftab: 'cats', fv: {}, fq: '', prod: { q: '', brand: '', cat: '', var: '', feat: '', status: '', sort: 'updated', page: 1, size: 10, sel: {} }, dp: { page: 1 }, tx: {}, enqf: '' };
   A.modalOpen = false; A.pending = false;
