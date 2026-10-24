@@ -154,3 +154,23 @@
 .ctA b{display:block;font:700 15px/1.2 var(--f-head)}.ctA small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .ctI{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px;color:#fff;flex:none}
 .ctA.call .ctI{background:var(--brand)}.ctA.wa .ctI{background:#25D366}
+
+/* ---- header v3: navy bar, true-centred menu ---- */
+.head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:12px 16px 12px 20px;border-radius:20px;border:0;
+  background:linear-gradient(115deg,#0B1D3F 0%,#14305E 55%,#1F4A91 100%);box-shadow:0 14px 34px rgba(11,29,63,.28);position:relative}
+.head::after{content:"";position:absolute;left:24px;right:24px;bottom:0;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent) 20%,var(--accent) 80%,transparent);opacity:.9}
+.head .brand{justify-self:start;color:#fff}
+.head .brand b{color:#fff}
+.head .brand small{color:rgba(255,255,255,.65)}
+.head .brand .mark{background:#fff;color:var(--brand);width:44px;height:44px;border-radius:12px;font-size:22px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.head .nav{justify-self:center;flex:none;justify-content:center;gap:6px}
+.head .nav>a,.head .nav .has-sub>a{color:rgba(255,255,255,.88);padding:12px 18px;font-size:13px;letter-spacing:.12em}
+.head .nav a:hover{color:#fff;background:rgba(255,255,255,.1)}
+.head .nav a[aria-current="page"]{color:#fff;background:rgba(255,255,255,.14)!important}
+.head .nav a::after{left:18px;right:18px;bottom:7px;background:var(--accent)}
+.head .actions{justify-self:end}
+.head .actions .btn.brand{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;box-shadow:none}
+.head .actions .btn.brand:hover{background:rgba(255,255,255,.22)}
+.head .ctBtn{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px rgba(0,0,0,.3)}
+@media (max-width:1080px){.head .nav>a{padding:12px 11px;letter-spacing:.07em}}
+@media (max-width:960px){.head{grid-template-columns:1fr auto}.head .nav{display:none}}
