@@ -80,7 +80,9 @@
       '<a href="/about">About us <span aria-hidden="true">→</span></a><a href="/mission-vision">Mission &amp; vision <span aria-hidden="true">→</span></a><a href="/values">Our values <span aria-hidden="true">→</span></a>' +
       '<a href="/supremlite">SUPREMLITE <span aria-hidden="true">→</span></a><a href="/ston">STON <span aria-hidden="true">→</span></a>' +
       '<a href="/wholesale">Wholesale &amp; business enquiries <span aria-hidden="true">→</span></a><a href="/contact">Contact us <span aria-hidden="true">→</span></a>' +
-      '<div class="facts"><span><b>Established</b> 2015</span>' + (s.location ? '<span><b>Location</b> ' + esc(s.location) + '</span>' : '') + (phone ? '<span><b>Phone / WhatsApp</b> ' + phone + '</span>' : '') + '</div></nav></div></div></header>' +
+      '<div class="facts"><span><b>Established</b> 2015</span>' + (s.location ? '<span><b>Location</b> ' + esc(s.location) + '</span>' : '') + (phone ? '<span><b>Phone / WhatsApp</b> ' + phone + '</span>' : '') + '</div></nav></div>' +
+      '<button class="burger" id="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mnav"><span></span><span></span><span></span></button></div>' +
+      '<nav class="mnav" id="mnav" aria-label="Mobile menu" hidden>' + navHTML() + '<b class="mh">Company</b><a href="/mission-vision">Mission &amp; vision</a><a href="/values">Our values</a><a href="/supremlite">SUPREMLITE</a><a href="/ston">STON</a><a href="/wholesale">Wholesale &amp; business enquiries</a><a href="/contact">Contact us</a></nav></header>' +
       '<div class="gbar" role="navigation" aria-label="Shop by category"><span class="lbl">Shop by</span><button class="arrow" id="prev" type="button" aria-label="Scroll left">‹</button>' +
       '<div class="tabs" id="tabs">' + gbarHTML() + '</div>' + moreHTML() + '<button class="arrow" id="next" type="button" aria-label="Scroll right">›</button></div></div></div>';
     var tb = $('#tabs'); $('#prev').onclick = function () { tb.scrollBy({ left: -160, behavior: 'smooth' }); }; $('#next').onclick = function () { tb.scrollBy({ left: 160, behavior: 'smooth' }); };
@@ -90,6 +92,9 @@
       document.addEventListener('click', function () { mm.hidden = true; mb.setAttribute('aria-expanded', 'false'); });
       window.addEventListener('scroll', function () { mm.hidden = true; }, { passive: true });
     }
+    var bg = $('#burger'), mn = $('#mnav');
+    bg.onclick = function (e) { e.stopPropagation(); var o = mn.hidden; mn.hidden = !o; bg.setAttribute('aria-expanded', String(o)); bg.classList.toggle('open', o); };
+    document.addEventListener('click', function (e) { if (!mn.hidden && !e.target.closest('.mnav,.burger')) { mn.hidden = true; bg.setAttribute('aria-expanded', 'false'); bg.classList.remove('open'); } });
     var cb = $('#ctBtn'), cm = $('#ctMenu');
     cb.onclick = function (e) { e.stopPropagation(); var o = cm.hidden; cm.hidden = !o; cb.setAttribute('aria-expanded', String(o)); if (o) { var cmenu = $('#coMenu'); if (cmenu) { cmenu.hidden = true; } } };
     document.addEventListener('click', function (e) { if (!cm.hidden && !e.target.closest('.ct')) { cm.hidden = true; cb.setAttribute('aria-expanded', 'false'); } });

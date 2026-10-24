@@ -200,3 +200,40 @@ section.abg::before{content:"";position:absolute;inset:0;background:linear-gradi
 section.abg h1,section.abg h2,section.abg h3,section.abg p,section.abg .prose,section.abg .eyebrow{color:#fff}
 section.abg .lcard{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff}
 section.abg .lcard p,section.abg .lcard h3,section.abg .lcard .more{color:#fff}
+
+/* ---- mobile & tablet header ---- */
+.burger,.mnav{display:none}
+@media (max-width:960px){
+  .head{grid-template-columns:minmax(0,1fr) auto!important;gap:10px;padding:10px 12px}
+  .head .nav{display:none!important}
+  .head .actions{gap:10px}
+  .head .actions .co{display:none}
+  .burger{display:grid;place-content:center;gap:5px;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);cursor:pointer}
+  .burger span{display:block;width:20px;height:2px;border-radius:2px;background:#fff;transition:transform .2s,opacity .2s}
+  .burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .burger.open span:nth-child(2){opacity:0}
+  .burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .mnav:not([hidden]){display:grid;grid-column:1/-1;gap:2px;padding:8px 0 6px;border-top:1px solid rgba(255,255,255,.18);margin-top:4px;max-height:70vh;overflow:auto}
+  .mnav a{display:block;color:#fff;text-decoration:none;font:700 14px/1.2 var(--f-head);letter-spacing:.1em;text-transform:uppercase;padding:15px 12px;border-radius:10px}
+  .mnav a:hover,.mnav a:active{background:rgba(255,255,255,.12)}
+  .mnav a[aria-current="page"]{background:rgba(255,255,255,.14)!important}
+  .mnav .has-sub,.mnav .sub{display:contents}
+  .mnav .mh{font:800 11px/1 var(--f-head);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);padding:16px 12px 6px}
+  .head .brand b{font-size:15px}
+}
+@media (max-width:480px){
+  .head .brand small{display:none}
+  .head .brand .mark{width:40px;height:40px}
+  .head .brand b{font-size:14px;letter-spacing:.02em}
+  .ctMenu{right:-58px}
+  .announce .in{flex-direction:column;align-items:flex-start;gap:2px}
+}
+@media (max-width:600px){
+  .slider{height:clamp(470px,128vw,560px)}
+  .slide{padding-bottom:72px;align-items:center}
+  .slide .cta .btn{padding-inline:16px}
+  .gbar .tabs .tab{padding:14px 12px 11px;font-size:12px;letter-spacing:.08em}
+  .gbar .moreWrap .tab{padding-inline:14px}
+  .gbar .tabs .tab{flex:0 0 auto}
+}
+@media (max-width:420px){.head .brand b{font-size:12.5px;letter-spacing:.01em}.head .brand{gap:9px}.head .actions{gap:8px}.ctBtn,.burger{width:42px;height:42px}}
