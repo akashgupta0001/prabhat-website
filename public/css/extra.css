@@ -128,3 +128,8 @@
 .moreMenu[hidden]{display:none}
 .moreMenu a{padding:10px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}
 .moreMenu a:hover{background:var(--alt)}
+/* shop ribbon: tabs share the width equally, More sits at the far right */
+.gbar .tabs{flex:1 1 0;min-width:0}
+.gbar .tabs .tab{flex:1 0 auto;text-align:center}
+.gbar .moreWrap{margin-left:auto}
+.gbar .moreWrap .tab{padding-inline:28px;border-left:1px solid var(--line)}
