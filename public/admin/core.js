@@ -152,6 +152,14 @@ window.A = window.A || {};
     vars: { label: 'Variety', plural: 'Varieties', field: 'varIds', route: 'varieties', ic: 'palette' },
     feats: { label: 'Feature', plural: 'Features', field: 'featIds', route: 'features', ic: 'star' }
   };
+  A.TAXDEF = { cats: { label: 'Category', plural: 'Categories' }, vars: { label: 'Variety', plural: 'Varieties' }, feats: { label: 'Feature', plural: 'Features' } };
+  A.applyLabels = function () {
+    var fl = (A.S.settings && A.S.settings.filterLabels) || {};
+    Object.keys(A.TAXDEF).forEach(function (k) {
+      A.TAX[k].label = (fl[k] && fl[k].label) || A.TAXDEF[k].label;
+      A.TAX[k].plural = (fl[k] && fl[k].plural) || A.TAXDEF[k].plural;
+    });
+  };
   A.useCount = function (k, id) { var f = A.TAX[k].field; return A.S.products.filter(function (p) { return (p[f] || []).indexOf(id) > -1; }).length; };
   A.names = function (k, ids) { return (ids || []).map(function (id) { var o = A.S[k].find(function (x) { return x.id === id; }); return o ? o.name : null; }).filter(Boolean); };
   A.canWrite = function () { return A.db && A.role !== 'Viewer'; };

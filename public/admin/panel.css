@@ -271,3 +271,11 @@ table.t tr:hover td { background: var(--soft); }
 #dashProd .clip { max-width: 96px; }
 #dashProd table.t th, #dashProd table.t td { padding-left: 8px; padding-right: 8px; }
 #dashProd .ph-row input[type=search] { min-width: 200px; flex: 1; max-width: 260px; }
+/* product filters panel: room for edit / delete buttons */
+.fp { grid-template-columns: minmax(0, 1fr); }
+.fcols { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.fl h5 { align-items: center; }
+.fl h5 .acts { display: flex; gap: 4px; }
+.fl .it > span:not(.th2):not(.n):not(.pill) { min-width: 0; overflow-wrap: anywhere; }
+.fl .it .ibtn { flex: none; }
+.fl { max-height: 320px; }

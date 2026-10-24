@@ -33,7 +33,7 @@ export async function onRequestGet({ env, waitUntil }) {
   const body = JSON.stringify({
     settings: {
       company: settings.company, phone: settings.phone, whatsapp: settings.whatsapp, location: settings.location, email: settings.email,
-      showPrices: !!settings.showPrices, seoTitle: settings.seoTitle, seoDesc: settings.seoDesc, siteUrl: settings.siteUrl,
+      showPrices: !!settings.showPrices, filterLabels: settings.filterLabels || {}, seoTitle: settings.seoTitle, seoDesc: settings.seoDesc, siteUrl: settings.siteUrl,
     },
     home: site.home_live || null,
     cats: (by.cats || []).filter(act).sort(order),

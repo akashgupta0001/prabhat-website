@@ -9,6 +9,9 @@
     { g: 'Enquiries & Orders', items: [['enq', 'Customer Enquiries', 'msg', true], ['wenq', 'Wholesale Enquiries', 'mail']] },
     { g: 'Settings', items: [['settings', 'General Settings', 'cog'], ['seo', 'SEO Settings', 'search'], ['users', 'Users & Roles', 'users']] }
   ];
+  A.syncNav = function () {
+    NAV.forEach(function (g) { (g.items || []).forEach(function (it) { var k = { categories: 'cats', varieties: 'vars', features: 'feats' }[it[0]]; if (k) it[1] = A.TAX[k].plural; }); });
+  };
   var TITLES = {};
   var closed = {};
 
@@ -97,6 +100,7 @@
     bulkArchive: function () { var ids = Object.keys(UI.prod.sel).filter(function (k) { return UI.prod.sel[k]; }); A.confirmBox({ title: 'Archive ' + ids.length + ' products?', body: '<p>They are hidden from the public catalogue and keep all their data.</p>', actions: [{ label: 'Archive', fn: async function () { if (await A.run(async function () { for (var id of ids) await A.col('products').doc(id).update({ status: 'archived', updated: A.now() }); }, ids.length + ' products archived.')) { A.log(ids.length + ' products archived'); UI.prod.sel = {}; A.closeModal(); } } }] }); },
     bulkCat: async function () { var cid = A.$('#bulkCat').value, ids = Object.keys(UI.prod.sel).filter(function (k) { return UI.prod.sel[k]; }); if (!cid) { A.toast('Choose a category first.', 'err'); return; } if (await A.run(async function () { for (var id of ids) { var p = S.products.find(function (x) { return x.id === id; }), a = (p.catIds || []).slice(); if (a.indexOf(cid) < 0) a.push(cid); await A.col('products').doc(id).update({ catIds: a, updated: A.now() }); } }, 'Category assigned to ' + ids.length + ' products.')) { A.log('Category assigned to ' + ids.length + ' products'); UI.prod.sel = {}; } },
     /* taxonomy */
+    renameTax: function (t) { A.labelForm(t.dataset.k); }, saveLabels: function (t) { A.saveLabels(t.dataset.k); }, resetLabels: function (t) { A.saveLabels(t.dataset.k, true); },
     addTax: function (t) { A.taxForm(t.dataset.k); }, editTax: function (t) { A.taxForm(t.dataset.k, t.dataset.id); }, dupTax: function (t) { A.dupTax(t.dataset.k, t.dataset.id); }, delTax: function (t) { A.askDelTax(t.dataset.k, t.dataset.id); },
     moveTax: function (t) { A.moveTax(t.dataset.k, +t.dataset.i, +t.dataset.d); }, saveTax: function (t) { A.saveTax(t.dataset.k, t.dataset.id); }, exportTax: function (t) { A.exportTax(t.dataset.k); },
     taxActive: function (t) { A.run(function () { return A.col(t.dataset.k).doc(t.dataset.id).update({ active: t.checked, updated: A.now() }); }, t.checked ? 'Activated.' : 'Deactivated. Hidden from new assignments and public filters.'); },
@@ -176,7 +180,7 @@
     A.col('activity').orderBy('ts', 'desc').limit(30).onSnapshot(function (snap) { S.activity = snap.docs.map(function (d) { return d.data(); }); A.refresh(); }, onErr);
     A.db.doc('site/home_draft').onSnapshot(function (s) { if (!A.dirty) A.H = s.exists ? Object.assign(A.defHome(), s.data()) : A.defHome(); S.loaded.draft = true; A.refresh(); }, onErr);
     A.db.doc('site/home_live').onSnapshot(function (s) { S.live = s.exists ? s.data() : null; S.loaded.live = true; A.refresh(); }, onErr);
-    A.db.doc('site/settings').onSnapshot(function (s) { S.settings = s.exists ? s.data() : {}; A.refresh(); }, onErr);
+    A.db.doc('site/settings').onSnapshot(function (s) { S.settings = s.exists ? s.data() : {}; A.applyLabels(); A.syncNav(); A.refresh(); }, onErr);
   };
   A.boot();
 })(window.A);

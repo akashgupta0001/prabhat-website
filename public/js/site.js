@@ -217,6 +217,7 @@
     var st = { q: qs.get('q') || '', brand: brand ? brand.id : '', cat: cat ? cat.id : '', vr: '', ft: '', sort: qs.get('sort') || 'new' };
     var vr = D.vars.filter(function (v) { return v.slug === qs.get('variety') || v.id === qs.get('variety'); })[0]; if (vr) st.vr = vr.id;
     var ft = D.feats.filter(function (v) { return v.slug === qs.get('feature') || v.id === qs.get('feature'); })[0]; if (ft) st.ft = ft.id;
+    var FL = D.settings.filterLabels || {}, lbl = function (k, d) { return String((FL[k] && FL[k].plural) || d).toLowerCase(); };
     var STEP = 12, shown = STEP;
     var opt = function (list, val, all) { return '<option value="">' + all + '</option>' + list.filter(function (x) { return x.filterVisible !== false; }).map(function (x) { return '<option value="' + esc(x.id) + '"' + (val === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join(''); };
     var h = $('#chead');
@@ -224,7 +225,7 @@
     setMeta((cat ? cat.name : brand ? brand.name : 'Product catalogue') + ' | ' + COMPANY, 'Browse ' + COMPANY + ' footwear models by brand, category and features, and enquire on WhatsApp.');
     root.innerHTML = '<div class="filters" role="search"><input id="fq" type="search" placeholder="Search model code or name" aria-label="Search" value="' + esc(st.q) + '">' +
       (preBrand ? '<span style="display:none"></span>' : '<select id="fb" aria-label="Brand">' + opt(D.brands, st.brand, 'All brands') + '</select>') +
-      '<select id="fc" aria-label="Category">' + opt(D.cats, st.cat, 'All categories') + '</select><select id="fv" aria-label="Variety">' + opt(D.vars, st.vr, 'All varieties') + '</select><select id="ff" aria-label="Feature">' + opt(D.feats, st.ft, 'All features') + '</select>' +
+      '<select id="fc" aria-label="' + lbl('cats', 'categories') + '">' + opt(D.cats, st.cat, 'All ' + lbl('cats', 'categories')) + '</select><select id="fv" aria-label="Variety">' + opt(D.vars, st.vr, 'All ' + lbl('vars', 'varieties')) + '</select><select id="ff" aria-label="Feature">' + opt(D.feats, st.ft, 'All ' + lbl('feats', 'features')) + '</select>' +
       '<select id="fs" aria-label="Sort"><option value="new">Newest first</option><option value="name">Name A to Z</option><option value="sku">Model code</option></select></div>' +
       '<p class="count" id="count" aria-live="polite"></p><div class="pgrid" id="pgrid"></div><div class="loadmore" id="more" hidden><button class="btn brand" type="button">Load more</button></div>';
     $('#fs').value = st.sort;

@@ -126,8 +126,8 @@
     var wk = Date.now() - 7 * 864e5, mo = Date.now() - 30 * 864e5;
     var newP = S.products.filter(function (p) { return new Date(p.created || 0) > wk; }).length, newE = S.enq.filter(function (e) { return new Date(e.created || 0) > wk; }).length, newPg = S.pages.filter(function (p) { return new Date(p.created || 0) > mo; }).length;
     function allAct(k, w) { var n = S[k].filter(function (x) { return x.active !== false; }).length; return n === S[k].length ? 'All ' + w + ' active' : n + ' of ' + S[k].length + ' active'; }
-    var cards = [['box', 't-blue', 'Total Products', S.products.length, '+' + newP + ' this week'], ['grid', 't-green', 'Total Categories', S.cats.length, allAct('cats', 'categories')], ['palette', 't-blue', 'Total Varieties', S.vars.length, allAct('vars', 'varieties')],
-      ['star', 't-amber', 'Total Features', S.feats.length, allAct('feats', 'features')], ['file', 't-blue', 'Total Pages', S.pages.length, '+' + newPg + ' this month'], ['mail', 't-blue', 'Total Enquiries', S.enq.length, '+' + newE + ' this week']];
+    var cards = [['box', 't-blue', 'Total Products', S.products.length, '+' + newP + ' this week'], ['grid', 't-green', 'Total ' + A.TAX.cats.plural, S.cats.length, allAct('cats', 'categories')], ['palette', 't-blue', 'Total ' + A.TAX.vars.plural, S.vars.length, allAct('vars', 'varieties')],
+      ['star', 't-amber', 'Total ' + A.TAX.feats.plural, S.feats.length, allAct('feats', 'features')], ['file', 't-blue', 'Total Pages', S.pages.length, '+' + newPg + ' this month'], ['mail', 't-blue', 'Total Enquiries', S.enq.length, '+' + newE + ' this week']];
     return '<div class="stats">' + cards.map(function (c) { return '<div class="card stat"><div class="ico ' + c[1] + '">' + ic(c[0]) + '</div><div><small>' + c[2] + '</small><b>' + c[3] + '</b><span class="d">' + (/^\+/.test(c[4]) ? ic('trend') : ic('ok')) + c[4] + '</span></div></div>'; }).join('') + '</div>';
   };
   function fvOn(k, x) { return Object.prototype.hasOwnProperty.call(UI.fv, x.id) ? UI.fv[x.id] : x.filterVisible !== false; }
@@ -136,18 +136,36 @@
     var others = tabs.filter(function (t) { return t !== cur; });
     function list(k, withCount) {
       return S[k].filter(function (x) { return !q || x.name.toLowerCase().indexOf(q) > -1; }).map(function (x) {
-        return '<label class="it"><input class="chk" type="checkbox" data-act="fvToggle" data-id="' + x.id + '" ' + (fvOn(k, x) ? 'checked' : '') + '>' + (withCount ? '<span class="th2" style="' + A.bg(x.image) + '">' + (x.image ? '' : esc(x.name.charAt(0))) + '</span>' : '') + '<span>' + esc(x.name) + (x.active === false ? ' <span class="pill no">inactive</span>' : '') + '</span>' + (withCount ? '<span class="n">(' + A.useCount(k, x.id) + ')</span><button class="ibtn" style="width:22px;height:22px" data-act="editTax" data-k="' + k + '" data-id="' + x.id + '" aria-label="Edit">' + ic('edit') + '</button>' : '') + '</label>';
+        return '<label class="it"><input class="chk" type="checkbox" data-act="fvToggle" data-id="' + x.id + '" ' + (fvOn(k, x) ? 'checked' : '') + '>' + (withCount ? '<span class="th2" style="' + A.bg(x.image) + '">' + (x.image ? '' : esc(x.name.charAt(0))) + '</span>' : '') + '<span>' + esc(x.name) + (x.active === false ? ' <span class="pill no">inactive</span>' : '') + '</span><span class="n">(' + A.useCount(k, x.id) + ')</span><button type="button" class="ibtn" style="width:22px;height:22px" data-act="editTax" data-k="' + k + '" data-id="' + x.id + '" aria-label="Edit ' + esc(x.name) + '" title="Edit">' + ic('edit') + '</button><button type="button" class="ibtn r" style="width:22px;height:22px" data-act="delTax" data-k="' + k + '" data-id="' + x.id + '" aria-label="Delete ' + esc(x.name) + '" title="Delete">' + ic('trash') + '</button>' + '</label>';
       }).join('') || '<div class="empty" style="padding:16px">None yet</div>';
+    }
+    function heading(k) {
+      return '<button type="button" class="ibtn" style="width:22px;height:22px" data-act="renameTax" data-k="' + k + '" aria-label="Rename heading" title="Rename heading">' + ic('edit') + '</button><button type="button" class="ibtn" style="width:22px;height:22px" data-act="addTax" data-k="' + k + '" aria-label="Add new" title="Add new">' + ic('plus') + '</button>';
     }
     var pend = Object.keys(UI.fv).length;
     return '<div class="card"><div class="ph-row"><span class="ti">' + ic('layers') + '</span><div><h2>Product Filters <span style="font-weight:500;color:var(--muted)">(' + S.cats.length + ' Categories × ' + S.vars.length + ' Varieties × ' + S.feats.length + ' Features)</span></h2></div></div>' +
       '<div class="tabs">' + tabs.map(function (t) { return '<button class="' + (cur === t ? 'on' : '') + '" data-act="fTab" data-v="' + t + '">' + A.TAX[t].plural + ' (' + S[t].length + ')</button>'; }).join('') + '</div>' +
       '<div class="tools" style="padding-bottom:0"><input type="search" placeholder="Search" aria-label="Search filters" data-act-input="fq" value="' + esc(UI.fq) + '"><button class="btn sm" data-act="addTax" data-k="' + cur + '">' + ic('plus') + ' Add New</button></div>' +
-      '<div class="fp"><div class="fl"><h5>' + A.TAX[cur].plural + '</h5>' + list(cur, true) + '</div><div class="fcols">' +
-      others.map(function (k) { return '<div class="fl"><h5>' + S[k].length + ' ' + A.TAX[k].plural + '</h5>' + list(k, false) + '</div>'; }).join('') +
+      '<div class="fp"><div class="fl"><h5><span>' + esc(A.TAX[cur].plural) + '</span><span class="acts">' + heading(cur) + '</span></h5>' + list(cur, true) + '</div><div class="fcols">' +
+      others.map(function (k) { return '<div class="fl"><h5><span>' + S[k].length + ' ' + esc(A.TAX[k].plural) + '</span><span class="acts">' + heading(k) + '</span></h5>' + list(k, false) + '</div>'; }).join('') +
       '<div class="fbtn"><button class="btn pri" data-act="fvSave" ' + (pend ? '' : 'disabled') + '>Apply Filters</button><button class="btn" data-act="fvReset" ' + (pend ? '' : 'disabled') + '>Reset</button></div>' +
       '<div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="fvAll" data-v="1">Select all</button><button class="btn sm" data-act="fvAll" data-v="0">Deselect all</button>' + (pend ? '<span class="dirty">Unsaved changes</span>' : '') + '</div></div></div>' +
       '<p class="cell-s" style="padding:0 16px 14px;margin:0">Unticking a filter only hides it on the public catalogue. Products and their assignments are kept.</p></div>';
+  };
+  A.labelForm = function (k) {
+    var T = A.TAX[k];
+    A.modal('<div class="sh-h"><h3>Rename heading</h3><button class="ic-btn" data-act="closeModal" aria-label="Close">' + ic('x') + '</button></div><div class="sh-b">' +
+      '<p class="cell-s" style="margin-top:0">This changes the heading everywhere: this panel, the menu, and the filter on the public catalogue.</p>' +
+      '<label class="fld"><span>Heading (plural), for example "Categories"</span><input id="lb_pl" value="' + esc(T.plural) + '"></label>' +
+      '<label class="fld"><span>Single item name, for example "Category"</span><input id="lb_sg" value="' + esc(T.label) + '"></label><p class="err" id="lb_err" role="alert"></p></div>' +
+      '<div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn" data-act="resetLabels" data-k="' + k + '">Reset to default</button><button class="btn pri" data-act="saveLabels" data-k="' + k + '">Save</button></div>', 'sm');
+  };
+  A.saveLabels = async function (k, reset) {
+    var pl = reset ? A.TAXDEF[k].plural : A.mv('lb_pl').trim(), sg = reset ? A.TAXDEF[k].label : A.mv('lb_sg').trim();
+    if (!pl || !sg) { A.$('#lb_err').textContent = 'Both names are required.'; return; }
+    var fl = Object.assign({}, S.settings.filterLabels || {}); fl[k] = { plural: pl, label: sg };
+    var o = Object.assign({}, S.settings, { filterLabels: fl });
+    if (await A.run(function () { return A.db.doc('site/settings').set(o); }, 'Heading saved.')) { S.settings = o; A.applyLabels(); A.log('Filter heading renamed: ' + pl); A.closeModal(); A.refresh(true); }
   };
   A.fvSave = async function () {
     var ids = Object.keys(UI.fv), ok = await A.run(async function () {
