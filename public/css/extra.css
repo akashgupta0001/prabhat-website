@@ -266,3 +266,15 @@ section.abg .lcard p,section.abg .lcard h3,section.abg .lcard .more{color:#fff}
 @media (max-width:480px){.foot .fname b{font-size:1.05rem}.foot .fb .mark{width:40px;height:40px;font-size:20px}}
 
 .menu a.stafflogin{margin-top:6px;border-top:1px solid var(--line);border-radius:0 0 8px 8px;font-weight:700;color:var(--brand)}
+
+/* brand wordmarks (logo lettering) */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+h1.wm,h3.wm{margin:0;line-height:0}
+h1.wm img{height:clamp(64px,11vw,120px);width:auto;max-width:100%;display:block}
+h3.wm img{height:clamp(70px,9vw,104px);width:auto;max-width:100%;display:block}
+.bcard.b-supremlite{background:linear-gradient(135deg,#16398A 0%,#0F2A68 100%);color:#fff;border:0}
+.bcard.b-ston{background:linear-gradient(135deg,#1b1514 0%,#2a0c0a 55%,#7a1a12 130%);color:#fff;border:0}
+.bcard.b-supremlite p,.bcard.b-ston p,.bcard.b-supremlite .bdet,.bcard.b-ston .bdet{color:#fff;opacity:.9}
+.bcard.hasbg.b-supremlite,.bcard.hasbg.b-ston{background-size:cover;background-position:center}
+.pagehero.ph-supremlite{background:linear-gradient(120deg,#16398A 0%,#0F2A68 100%)}
+.pagehero.ph-ston{background:linear-gradient(120deg,#1b1514 0%,#2a0c0a 60%,#8a1c13 140%)}
