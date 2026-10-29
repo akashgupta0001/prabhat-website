@@ -264,3 +264,5 @@ section.abg .lcard p,section.abg .lcard h3,section.abg .lcard .more{color:#fff}
 .foot .fname b{font-size:clamp(1.05rem,1.8vw,1.3rem);letter-spacing:.04em;white-space:nowrap}
 .foot .fname small{font-size:10px}
 @media (max-width:480px){.foot .fname b{font-size:1.05rem}.foot .fb .mark{width:40px;height:40px;font-size:20px}}
+
+.menu a.stafflogin{margin-top:6px;border-top:1px solid var(--line);border-radius:0 0 8px 8px;font-weight:700;color:var(--brand)}
