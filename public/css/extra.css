@@ -278,3 +278,5 @@ h3.wm img{height:clamp(70px,9vw,104px);width:auto;max-width:100%;display:block}
 .bcard.hasbg.b-supremlite,.bcard.hasbg.b-ston{background-size:cover;background-position:center}
 .pagehero.ph-supremlite{background:linear-gradient(120deg,#16398A 0%,#0F2A68 100%)}
 .pagehero.ph-ston{background:linear-gradient(120deg,#1b1514 0%,#2a0c0a 60%,#8a1c13 140%)}
+/* header: brand names highlighted */
+.head .brand small{color:#FF4B2B;font-weight:800;font-size:11.5px;letter-spacing:.2em;text-shadow:0 0 12px rgba(255,75,43,.35)}
