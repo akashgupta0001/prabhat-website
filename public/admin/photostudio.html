@@ -61,8 +61,8 @@
       <p class="muted c">Removes the background, enhances gently and places the product on clean white.</p>
       <div class="card">
         <span class="lbl">AI quality</span>
-        <div class="chips" id="qChips"><button data-q="hd" class="on">HD edges</button><button data-q="fast">Fast</button></div>
-        <p class="muted s" id="qNote">Downloads a 47 MB AI model once, then works offline.</p>
+        <div class="chips" id="qChips"><button data-q="fast" class="on">Standard (5 MB)</button><button data-q="hd">HD edges (47 MB)</button></div>
+        <p class="muted s" id="qNote">Runs on this device with a small 5 MB AI model. Your photo is not uploaded or stored anywhere.</p>
         <button class="btn wide" id="cut">Remove background</button>
       </div>
       <div class="card" id="edgeCard" hidden>
@@ -70,7 +70,7 @@
         <div class="chips" id="brush"><button data-b="off" class="on">Off</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
         <p class="muted s" id="brushNote">Choose Restore or Erase, then paint on the photo.</p>
         <div class="sl"><span>Brush size</span><input type="range" id="bsz" min="5" max="200" value="40"></div>
-        <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="10"></div>
+        <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="20"></div>
         <button class="btn ghost wide" id="maskReset">Undo all brush edits</button>
       </div>
     </div>
@@ -148,17 +148,18 @@
 
     <div class="tab" id="t-save" hidden>
       <div class="card">
-        <span class="lbl">Save to the website</span>
-        <select id="sProd"><option value="">Choose product…</option></select>
-        <div class="row"><button class="btn pri grow" id="sMain">Set as main photo</button><button class="btn grow" id="sGal">Add to gallery</button></div>
-        <p class="muted s" id="sNote">Saved in HD (up to 2560 px). It appears on the website within about a minute.</p>
-      </div>
-      <div class="card">
         <span class="lbl">Download to this device</span>
         <div class="chips" id="fmt"><button data-f="png" class="on">PNG</button><button data-f="jpg">JPG</button><button data-f="webp">WebP</button></div>
         <div class="chips" id="dsz"><button data-z="1200">1200 px</button><button data-z="2000" class="on">2000 px</button><button data-z="2560">2560 px</button></div>
         <p class="muted s" id="dNote"></p>
-        <button class="btn wide" id="dl">⤓ Download</button>
+        <button class="btn pri wide" id="dl">⤓ Download</button>
+      </div>
+      <div class="card">
+        <span class="lbl">Put on the website</span>
+        <label class="ck"><input type="checkbox" id="allowSave"> Allow saving to a product</label>
+        <p class="muted s" id="sNote">Off by default, so Photo Studio uses no website storage. When on, the new photo replaces the product's main photo and the old photo is deleted, so storage does not grow.</p>
+        <select id="sProd" disabled><option value="">Choose product…</option></select>
+        <button class="btn wide" id="sMain" disabled>Replace main photo</button>
       </div>
     </div>
   </aside>

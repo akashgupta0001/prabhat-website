@@ -6,16 +6,19 @@
   var $ = function (s) { return document.querySelector(s); };
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var ORT_VER = '1.20.1', ORT_BASE = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/';
+  // AI models are not part of the website: they load from jsDelivr's free mirror of the
+  // GitHub repository (folder models/), so they use no website storage or bandwidth.
+  // Nothing is written to the website or kept by this page on the device.
+  var MODEL_BASE = 'https://cdn.jsdelivr.net/gh/akashgupta0001/prabhat-website@main/models/';
   var MODELS = {
-    hd: { parts: ['/models/isnet-int8.part0', '/models/isnet-int8.part1', '/models/isnet-int8.part2'], size: 1024, norm: 'half', mb: 47 },
-    fast: { parts: ['/models/u2netp.onnx'], size: 320, norm: 'imagenet', mb: 5 }
+    fast: { parts: [MODEL_BASE + 'u2netp.onnx'], size: 320, norm: 'imagenet', mb: 5 },
+    hd: { parts: [MODEL_BASE + 'isnet-int8.part0', MODEL_BASE + 'isnet-int8.part1', MODEL_BASE + 'isnet-int8.part2'], size: 1024, norm: 'half', mb: 47 }
   };
   var MAX_SRC = 2560;
-  var isPhone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
 
-  var DEF = { tight: 10, ex: 0, co: 0, sa: 0, wa: 0, sh: 0, bg: 'none', bgB: 0, bgBlur: 0, asp: '1', sc: 1, x: 0.5, y: 0.5, rot: 0, flip: false, shad: 'under', shO: 45, refl: 0 };
+  var DEF = { tight: 20, ex: 0, co: 0, sa: 0, wa: 0, sh: 0, bg: 'none', bgB: 0, bgBlur: 0, asp: '1', sc: 1, x: 0.5, y: 0.5, rot: 0, flip: false, shad: 'under', shO: 45, refl: 0 };
   var P = Object.assign({}, DEF), hist = [JSON.stringify(P)], hi = 0;
-  var st = { src: null, name: 'photo', prob: null, probSize: 0, cut: false, restore: null, erase: null, mask: null, subj: null, box: null, enh: null, enhKey: '', bgImgs: {}, product: null, brush: 'off', compare: false, quality: isPhone ? 'fast' : 'hd' };
+  var st = { src: null, name: 'photo', prob: null, probSize: 0, cut: false, restore: null, erase: null, mask: null, subj: null, box: null, enh: null, enhKey: '', bgImgs: {}, product: null, brush: 'off', compare: false, quality: 'fast' };
   var products = [], db = null, assets = null;
 
   /* ---------- small UI helpers ---------- */
@@ -92,25 +95,15 @@
   }
   function fetchModel(key, onPct) {
     var m = MODELS[key], total = m.mb * 1024 * 1024, got = 0;
-    var cacheP = window.caches ? caches.open('ps-models-v1').catch(function () { return null; }) : Promise.resolve(null);
-    return cacheP.then(function (cache) {
-      return Promise.all(m.parts.map(function (url) {
-        return (cache ? cache.match(url) : Promise.resolve(null)).then(function (hit) {
-          if (hit) return hit.arrayBuffer().then(function (b) { got += b.byteLength; onPct(got / total); return b; });
-          return fetch(url).then(function (r) {
-            if (!r.ok) throw new Error('model download failed (' + r.status + ')');
-            var copy = r.clone();
-            if (!r.body || !r.body.getReader) return r.arrayBuffer().then(function (b) { got += b.byteLength; onPct(got / total); return b; });
-            var rd = r.body.getReader(), chunks = [], n = 0;
-            function pump() { return rd.read().then(function (x) { if (x.done) return; chunks.push(x.value); n += x.value.length; got += x.value.length; onPct(Math.min(1, got / total)); return pump(); }); }
-            return pump().then(function () {
-              if (cache) cache.put(url, copy).catch(function () {});
-              var out = new Uint8Array(n), o = 0; chunks.forEach(function (c) { out.set(c, o); o += c.length; }); return out.buffer;
-            });
-          });
-        });
-      }));
-    }).then(function (bufs) {
+    return Promise.all(m.parts.map(function (url) {
+      return fetch(url).then(function (r) {
+        if (!r.ok) throw new Error('model download failed (' + r.status + ')');
+        if (!r.body || !r.body.getReader) return r.arrayBuffer().then(function (b) { got += b.byteLength; onPct(got / total); return b; });
+        var rd = r.body.getReader(), chunks = [], n = 0;
+        function pump() { return rd.read().then(function (x) { if (x.done) return; chunks.push(x.value); n += x.value.length; got += x.value.length; onPct(Math.min(1, got / total)); return pump(); }); }
+        return pump().then(function () { var out = new Uint8Array(n), o = 0; chunks.forEach(function (c) { out.set(c, o); o += c.length; }); return out.buffer; });
+      });
+    })).then(function (bufs) {
       var n = bufs.reduce(function (a, b) { return a + b.byteLength; }, 0), out = new Uint8Array(n), o = 0;
       bufs.forEach(function (b) { out.set(new Uint8Array(b), o); o += b.byteLength; }); return out;
     });
@@ -120,7 +113,7 @@
     sessions[key] = loadOrt().then(function (ort) {
       ort.env.wasm.wasmPaths = ORT_BASE;
       ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1;
-      return fetchModel(key, function (p) { busy(true, 'Downloading AI model (' + MODELS[key].mb + ' MB, first time only)…', p); })
+      return fetchModel(key, function (p) { busy(true, 'Loading AI model (' + MODELS[key].mb + ' MB)…', p); })
         .then(function (bytes) { busy(true, 'Starting AI…'); return ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }); });
     });
     sessions[key].catch(function () { delete sessions[key]; });
@@ -292,9 +285,9 @@
   function sync() {
     $$('[data-k]').forEach(function (el) { var v = P[el.dataset.k]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; });
     chips('#shad', 's', P.shad); chips('#asp', 'a', P.asp); chips('#qChips', 'q', st.quality);
+    $('#qNote').textContent = st.quality === 'hd' ? 'Sharper edges, but downloads 47 MB each time. Best on a computer with Wi-Fi.' : 'Runs on this device with a small 5 MB AI model. Your photo is not uploaded or stored anywhere.';
     $$('#sw [data-bg]').forEach(function (b) { b.classList.toggle('on', b.dataset.bg === P.bg); });
     $$('#aiRes button').forEach(function (b) { b.classList.toggle('on', b.dataset.bg === P.bg); });
-    $('#qNote').textContent = st.quality === 'hd' ? 'Best edges. Downloads a 47 MB AI model once, then it is saved on this device.' : 'Quicker and lighter, good for phones. Downloads a 5 MB model once.';
     dNote();
   }
   $$('[data-k]').forEach(function (el) {
@@ -319,12 +312,11 @@
   $$('#tabs button').forEach(function (b) { b.onclick = function () { gotoTab(b.dataset.t); }; });
 
   /* cut out */
-  $$('#qChips button').forEach(function (b) { b.onclick = function () { st.quality = b.dataset.q; sync(); }; });
   function cutout() {
     if (st.cut) return Promise.resolve();
     var key = st.quality;
     return predict(key).catch(function (e) {
-      if (key === 'hd') { toast('HD model could not run on this device, using Fast instead.', true); st.quality = 'fast'; sync(); return predict('fast'); }
+      if (key === 'hd') { toast('HD could not run on this device, using Standard instead.', true); st.quality = 'fast'; sync(); return predict('fast'); }
       throw e;
     }).then(function (r) {
       st.prob = r.prob; st.probSize = r.size; st.cut = true; st._tight = P.tight;
@@ -333,8 +325,9 @@
       P.asp = '1'; P.sc = 1; P.x = 0.5; P.y = 0.5; commit();
       $('#edgeCard').hidden = false; $('#hint').hidden = false; setTimeout(function () { $('#hint').hidden = true; }, 4500);
       busy(false); sync(); render();
-    }).catch(function (e) { busy(false); toast('Background removal failed: ' + (e.message || e) + '. Try again, or choose Fast.', true); throw e; });
+    }).catch(function (e) { busy(false); toast('Background removal failed: ' + (e.message || e) + '. Please try again.', true); throw e; });
   }
+  $$('#qChips button').forEach(function (b) { b.onclick = function () { st.quality = b.dataset.q; sync(); }; });
   $('#cut').onclick = function () { cutout().catch(function () {}); };
   $('#magic').onclick = function () {
     cutout().then(function () {
@@ -472,31 +465,34 @@
       setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500); toast('Downloaded ' + name);
     }).catch(function (e) { busy(false); toast('Could not save: ' + e.message, true); });
   };
-  function saveTo(mode) {
+  $('#allowSave').onchange = function () {
+    var on = this.checked; $('#sProd').disabled = $('#sMain').disabled = !on;
+  };
+  function replaceMain() {
+    if (!$('#allowSave').checked) return;
     var pid = $('#sProd').value; if (!pid) return toast('Choose the product first.', true);
     if (!st.cut) return toast('Remove the background first.', true);
     if (!assets || !db) return toast('Saving is not available. Reload the page and sign in again.', true);
-    var p = products.find(function (x) { return x.id === pid; }) || {};
-    busy(true, 'Saving HD photo to ' + (p.name || 'product') + '…');
+    var p = products.find(function (x) { return x.id === pid; }) || {}, oldId = '';
+    busy(true, 'Saving photo to ' + (p.name || 'product') + '…');
     exportBlob(2560, P.bg === 'none' ? 'image/png' : 'image/jpeg').then(function (b) {
-      var file = new File([b], (st.name || 'photo') + (P.bg === 'none' ? '.png' : '.jpg'), { type: b.type });
-      return assets.upload(file);
+      return assets.upload(new File([b], (st.name || 'photo') + (P.bg === 'none' ? '.png' : '.jpg'), { type: b.type }));
     }).then(function (r) {
       var ref = db.doc('products/' + pid);
       return ref.get().then(function (snap) {
-        var d = (snap.exists && snap.data()) || {}, patch;
-        if (mode === 'main') { patch = { img: r.id }; if (d.img) patch.gallery = [d.img].concat((d.gallery || []).filter(function (x) { return x !== d.img; })); }
-        else patch = { gallery: (d.gallery || []).concat([r.id]) };
-        patch.updated = new Date().toISOString();
+        var d = (snap.exists && snap.data()) || {}; oldId = d.img || '';
+        var patch = { img: r.id, updated: new Date().toISOString() };
         return ref.update(patch).then(function () { Object.assign(p, patch); });
       });
     }).then(function () {
-      busy(false); toast(mode === 'main' ? 'Saved as the main photo. The old main photo moved to the gallery.' : 'Added to the gallery.');
-      $('#sNote').innerHTML = 'Saved. <a href="/admin/" style="color:var(--blue)">Back to Control Panel</a>';
+      // free the space used by the old photo (skipped automatically if it is used anywhere else)
+      if (!oldId) return;
+      return fetch('/api/admin/image/' + encodeURIComponent(oldId), { method: 'DELETE', credentials: 'same-origin', headers: { 'x-requested-with': 'pi-admin' } }).catch(function () {});
+    }).then(function () {
+      busy(false); toast('Main photo replaced. The old photo was deleted to save space.');
     }).catch(function (e) { busy(false); toast('Could not save: ' + (e.message || e), true); });
   }
-  $('#sMain').onclick = function () { saveTo('main'); };
-  $('#sGal').onclick = function () { saveTo('gal'); };
+  $('#sMain').onclick = replaceMain;
 
   /* ---------- boot ---------- */
   undoBtns(); sync();

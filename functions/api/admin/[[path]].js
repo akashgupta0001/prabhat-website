@@ -2,7 +2,7 @@ import { init, listCol, getDoc, putStmt, delStmt } from '../../../lib/db.js';
 import { json, bad, COLLECTIONS, ID_RE, randomId } from '../../../lib/util.js';
 import { getUser, sameOriginWrite } from '../../../lib/auth.js';
 import { connect as dbxConnect, getCreds as dbxCreds, authUrl as dbxAuthUrl } from '../../../lib/dropbox.js';
-import { putImage, maxBytes, hasR2, WIDTHS } from '../../../lib/images.js';
+import { putImage, maxBytes, hasR2, WIDTHS, deleteImageIfUnused } from '../../../lib/images.js';
 
 const MAX_DOC = 900 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -104,6 +104,10 @@ export async function onRequest({ request, env, params }) {
     const newId = of || randomId(16);
     await putImage(env, of ? of + '-' + w : newId, type, buf);
     return json({ id: newId, url: '/img/' + newId, store: hasR2(env) ? 'r2' : 'd1', maxBytes: max });
+  }
+  if (a === 'image' && m === 'DELETE') {
+    if (!/^[a-z0-9]{8,32}$/.test(col || '')) return bad('Bad image id.');
+    return json({ ok: true, removed: await deleteImageIfUnused(env, col) });
   }
   if (a === 'upload' && m === 'GET') {
     return json({ store: hasR2(env) ? 'r2' : 'd1', maxBytes: maxBytes(env), widths: WIDTHS });
