@@ -9,7 +9,7 @@
   // AI models are not part of the website: they load from jsDelivr's free mirror of the
   // GitHub repository (folder models/), so they use no website storage or bandwidth.
   // Nothing is written to the website or kept by this page on the device.
-  var MODEL_BASE = 'https://cdn.jsdelivr.net/gh/akashgupta0001/prabhat-website@main/models/';
+  var MODEL_BASE = 'https://cdn.jsdelivr.net/gh/akashgupta0001/prabhat-website@cb9816365347fb0403b02f52eb879cc939b77635/models/';
   var MODELS = {
     fast: { parts: [MODEL_BASE + 'u2netp.onnx'], size: 320, norm: 'imagenet', mb: 5 },
     hd: { parts: [MODEL_BASE + 'isnet-int8.part0', MODEL_BASE + 'isnet-int8.part1', MODEL_BASE + 'isnet-int8.part2'], size: 1024, norm: 'half', mb: 47 },
