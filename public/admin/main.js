@@ -5,7 +5,7 @@
   var NAV = [
     { id: 'dashboard', label: 'Dashboard', ic: 'home', top: true },
     { g: 'Website Management', items: [['homepage', 'Homepage Builder', 'grid', true], ['banner', 'Banner & Slider', 'image'], ['sections', 'Sections & Blocks', 'layers'], ['pages', 'Pages', 'file'], ['menu', 'Menu Management', 'menu'], ['brands', 'Brand Management', 'tag']] },
-    { g: 'Catalogue Management', items: [['products', 'Products', 'box', true], ['categories', 'Categories', 'folder'], ['varieties', 'Varieties', 'palette'], ['features', 'Features', 'star'], ['bulk', 'Bulk Upload', 'upload'], ['inventory', 'Inventory', 'wh']] },
+    { g: 'Catalogue Management', items: [['products', 'Products', 'box', true], ['categories', 'Categories', 'folder'], ['varieties', 'Varieties', 'palette'], ['features', 'Features', 'star'], ['photostudio', 'Photo Studio', 'image'], ['bulk', 'Bulk Upload', 'upload'], ['inventory', 'Inventory', 'wh']] },
     { g: 'Enquiries & Orders', items: [['enq', 'Customer Enquiries', 'msg', true], ['wenq', 'Wholesale Enquiries', 'mail']] },
     { g: 'Settings', items: [['settings', 'General Settings', 'cog'], ['seo', 'SEO Settings', 'search'], ['users', 'Users & Roles', 'users']] },
     { g: 'My Workspace', items: [['notes', 'Notes', 'file']] }
@@ -52,7 +52,7 @@
     A.render();
   };
   window.addEventListener('focusout', function () { if (A.pending && !A.modalOpen) setTimeout(function () { var ae = document.activeElement; if (!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) A.refresh(); }, 120); });
-  function go(r) { UI.route = r; document.body.classList.remove('nav-open'); A.render(); window.scrollTo(0, 0); }
+  function go(r) { if (r === 'photostudio') { location.href = '/admin/photostudio.html'; return; } UI.route = r; document.body.classList.remove('nav-open'); A.render(); window.scrollTo(0, 0); }
   A.go = go;
   function dataOf(t) { return t.dataset; }
 

@@ -4,6 +4,7 @@ Website and control panel for PRABHAT INDUSTRIES (SUPREMLITE and STON), hosted f
 
 - **Public website**: `public/` (home, catalogue with filters, product pages, company pages, enquiry forms)
 - **Control panel**: `public/admin/` at `/admin` (products, categories, varieties, features, homepage slider, pages, menu, brands, enquiries, settings)
+- **Photo Studio**: `/admin/photostudio.html` (Catalogue Management → Photo Studio). Removes photo backgrounds with an AI model that runs in the browser (`public/models/`), enhances, changes the background and saves the result straight to a product
 - **Backend**: `worker.js`, `functions/` and `lib/`, using a D1 database for all content and images
 - **Sign-in**: username and password, stored as Cloudflare secrets
 

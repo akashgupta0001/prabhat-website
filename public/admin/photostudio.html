@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Photo Studio · Control Panel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2A56'/%3E%3Ctext x='16' y='23' font-size='20' font-weight='700' text-anchor='middle' fill='white' font-family='Arial'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="photostudio.css">
+</head>
+<body>
+<header class="ps-top">
+  <a class="back" href="/admin/" title="Back to Control Panel">‹ <span>Control Panel</span></a>
+  <div class="ttl"><b>Photo Studio</b><small>Remove backgrounds · enhance · save to products</small></div>
+  <div class="steps" id="steps"><span data-s="1" class="on">1 · Photo</span><span data-s="2">2 · Edit</span><span data-s="3">3 · Save</span></div>
+</header>
+
+<!-- STEP 1: choose a photo -->
+<main class="ps-start" id="start">
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="image/*" hidden>
+    <span class="drop-ic">⤒</span>
+    <h1>Drop a product photo here</h1>
+    <p>Shoes, slippers, sandals, packaging, or a model wearing the product.</p>
+    <span class="btn pri big">Choose photo</span>
+    <small>JPG, PNG or WebP. Big photos are fine.</small>
+  </label>
+  <div class="card pick">
+    <div class="pick-h"><b>Or edit a product's photo</b><input id="pq" type="search" placeholder="Search product name or model code"></div>
+    <div class="plist" id="plist"><p class="muted">Loading products…</p></div>
+  </div>
+</main>
+
+<!-- STEP 2+3: editor -->
+<main class="ps-ed" id="ed" hidden>
+  <section class="stage-wrap">
+    <div class="tools">
+      <button class="tb" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="tb" id="redo" title="Redo">↷</button>
+      <button class="tb" id="cmp">Before ⇆ After</button>
+      <button class="tb" id="newPhoto">New photo</button>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="busy" id="busy" hidden><div class="spin"></div><b id="busyT">Working…</b><div class="bar" id="bar" hidden><i></i></div></div>
+      <div class="hint" id="hint" hidden>Drag to move · scroll or use Size to resize</div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <nav class="tabs" id="tabs">
+      <button data-t="cut" class="on"><i>✂</i>Cut out</button><button data-t="bg"><i>▦</i>Background</button>
+      <button data-t="enh"><i>☀</i>Enhance</button><button data-t="pos"><i>✥</i>Arrange</button><button data-t="save"><i>⤓</i>Save</button>
+    </nav>
+
+    <div class="tab" id="t-cut">
+      <button class="btn pri wide big" id="magic">✨ One-click magic</button>
+      <p class="muted c">Removes the background, enhances gently and places the product on clean white.</p>
+      <div class="card">
+        <span class="lbl">AI quality</span>
+        <div class="chips" id="qChips"><button data-q="hd" class="on">HD edges</button><button data-q="fast">Fast</button></div>
+        <p class="muted s" id="qNote">Downloads a 47 MB AI model once, then works offline.</p>
+        <button class="btn wide" id="cut">Remove background</button>
+      </div>
+      <div class="card" id="edgeCard" hidden>
+        <span class="lbl">Fix the edges</span>
+        <div class="chips" id="brush"><button data-b="off" class="on">Off</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
+        <p class="muted s" id="brushNote">Choose Restore or Erase, then paint on the photo.</p>
+        <div class="sl"><span>Brush size</span><input type="range" id="bsz" min="5" max="200" value="40"></div>
+        <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="10"></div>
+        <button class="btn ghost wide" id="maskReset">Undo all brush edits</button>
+      </div>
+    </div>
+
+    <div class="tab" id="t-bg" hidden>
+      <span class="lbl">Instant</span>
+      <div class="sw" id="sw">
+        <button data-bg="none" class="tr"><span>None</span></button>
+        <button data-bg="#ffffff" style="background:#fff"><span>White</span></button>
+        <button data-bg="#f5f4f0" style="background:#f5f4f0"><span>Off-white</span></button>
+        <button data-bg="#eceef2" style="background:#eceef2"><span>Grey</span></button>
+        <button data-bg="g:#f6f6f8:#c7cad1" style="background:radial-gradient(circle at 50% 42%,#f6f6f8,#c7cad1)"><span>Studio</span></button>
+        <button data-bg="g:#fbf6ef:#d9c6ad" style="background:radial-gradient(circle at 50% 42%,#fbf6ef,#d9c6ad)"><span>Warm</span></button>
+        <button data-bg="g:#e9f0fb:#a9bddf" style="background:radial-gradient(circle at 50% 42%,#e9f0fb,#a9bddf)"><span>Blue</span></button>
+        <button data-bg="g:#3a3f4a:#0e1014" style="background:radial-gradient(circle at 50% 42%,#3a3f4a,#0e1014)"><span>Dark</span></button>
+        <button data-bg="orig"><span>Original blurred</span></button>
+        <label class="pk" title="Any colour"><input type="color" id="anyC" value="#dfe9e2"><span>Colour</span></label>
+      </div>
+      <div class="card">
+        <span class="lbl">Your own background</span>
+        <label class="btn wide" for="bgFile">Upload a background photo</label>
+        <input type="file" id="bgFile" accept="image/*" hidden>
+      </div>
+      <div class="card">
+        <span class="lbl">AI background ✨</span>
+        <textarea id="aiP" rows="3" placeholder="e.g. light grey concrete floor, soft studio light, clean background"></textarea>
+        <div class="chips" id="aiIdeas">
+          <button data-p="clean light grey concrete floor and wall, soft studio lighting, minimal">Concrete studio</button>
+          <button data-p="wet city street at night with blurred neon bokeh lights, cinematic">Night street</button>
+          <button data-p="green park grass and trees, soft morning sunlight, blurred">Park</button>
+          <button data-p="wooden floor in a bright modern shoe store, blurred shelves">Shoe store</button>
+          <button data-p="festive Diwali scene with glowing diyas and marigold flowers, warm bokeh">Diwali</button>
+        </div>
+        <button class="btn pri wide" id="aiGo">Generate background</button>
+        <p class="muted s">Free AI service (Pollinations). Takes 10–40 seconds. Your product is kept exactly as it is.</p>
+        <div class="res" id="aiRes"></div>
+      </div>
+      <details class="card"><summary>Adjust background</summary>
+        <div class="sl"><span>Brightness</span><input type="range" data-k="bgB" min="-50" max="50" value="0"></div>
+        <div class="sl"><span>Blur</span><input type="range" data-k="bgBlur" min="0" max="30" value="0"></div>
+      </details>
+    </div>
+
+    <div class="tab" id="t-enh" hidden>
+      <button class="btn pri wide big" id="auto">✨ Auto enhance</button>
+      <p class="muted c s">Gentle by default. Never changes the logo, text or shape.</p>
+      <div class="card">
+        <div class="sl"><span>Brightness</span><input type="range" data-k="ex" min="-40" max="40" value="0"></div>
+        <div class="sl"><span>Contrast</span><input type="range" data-k="co" min="-40" max="40" value="0"></div>
+        <div class="sl"><span>Colour</span><input type="range" data-k="sa" min="-50" max="50" value="0"></div>
+        <div class="sl"><span>Warmth</span><input type="range" data-k="wa" min="-30" max="30" value="0"></div>
+        <div class="sl"><span>Sharpen</span><input type="range" data-k="sh" min="0" max="100" value="0"></div>
+      </div>
+      <button class="btn ghost wide" id="enhReset">Reset enhancements</button>
+    </div>
+
+    <div class="tab" id="t-pos" hidden>
+      <div class="card"><span class="lbl">Picture shape</span>
+        <div class="chips" id="asp"><button data-a="1" class="on">Square</button><button data-a="0.8">4:5</button><button data-a="0.75">3:4</button><button data-a="orig">Original</button><button data-a="1.7778">Wide</button></div>
+        <button class="btn ghost wide" id="center">⌖ Centre &amp; fit</button>
+      </div>
+      <div class="card"><span class="lbl">Product</span>
+        <div class="sl"><span>Size</span><input type="range" data-k="sc" min="0.2" max="1.6" step="0.01" value="1"></div>
+        <div class="sl"><span>Left / right</span><input type="range" data-k="x" min="0" max="1" step="0.005" value="0.5"></div>
+        <div class="sl"><span>Up / down</span><input type="range" data-k="y" min="0" max="1" step="0.005" value="0.5"></div>
+        <div class="sl"><span>Rotate</span><input type="range" data-k="rot" min="-45" max="45" step="0.5" value="0"></div>
+        <label class="ck"><input type="checkbox" data-k="flip"> Mirror</label>
+      </div>
+      <div class="card"><span class="lbl">Shadow</span>
+        <div class="chips" id="shad"><button data-s="none">None</button><button data-s="under" class="on">Under</button><button data-s="drop">Drop</button></div>
+        <div class="sl"><span>Strength</span><input type="range" data-k="shO" min="0" max="100" value="45"></div>
+        <div class="sl"><span>Reflection</span><input type="range" data-k="refl" min="0" max="80" value="0"></div>
+      </div>
+    </div>
+
+    <div class="tab" id="t-save" hidden>
+      <div class="card">
+        <span class="lbl">Save to the website</span>
+        <select id="sProd"><option value="">Choose product…</option></select>
+        <div class="row"><button class="btn pri grow" id="sMain">Set as main photo</button><button class="btn grow" id="sGal">Add to gallery</button></div>
+        <p class="muted s" id="sNote">Saved in HD (up to 2560 px). It appears on the website within about a minute.</p>
+      </div>
+      <div class="card">
+        <span class="lbl">Download to this device</span>
+        <div class="chips" id="fmt"><button data-f="png" class="on">PNG</button><button data-f="jpg">JPG</button><button data-f="webp">WebP</button></div>
+        <div class="chips" id="dsz"><button data-z="1200">1200 px</button><button data-z="2000" class="on">2000 px</button><button data-z="2560">2560 px</button></div>
+        <p class="muted s" id="dNote"></p>
+        <button class="btn wide" id="dl">⤓ Download</button>
+      </div>
+    </div>
+  </aside>
+</main>
+<div id="toast" hidden></div>
+<script src="shim.js"></script>
+<script src="photostudio.js"></script>
+</body>
+</html>

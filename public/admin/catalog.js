@@ -58,7 +58,7 @@
   }
   function pfImgs() {
     var m = A.$('#pfMain'), g = A.$('#pfGal');
-    if (m) m.innerHTML = '<div class="thumb" style="width:64px;height:64px;' + A.bg(A.PF.img) + '">' + (A.PF.img ? '' : ic('image')) + '</div><button class="btn sm" data-act="pfMain">' + (A.PF.img ? 'Change' : 'Upload') + '</button>' + (A.PF.img ? '<button class="btn sm dng" data-act="pfMainRm">Remove</button>' : '');
+    if (m) m.innerHTML = '<div class="thumb" style="width:64px;height:64px;' + A.bg(A.PF.img) + '">' + (A.PF.img ? '' : ic('image')) + '</div><button class="btn sm" data-act="pfMain">' + (A.PF.img ? 'Change' : 'Upload') + '</button>' + (A.PF.img ? '<button class="btn sm dng" data-act="pfMainRm">Remove</button>' : '') + (A.PF.id && A.PF.img ? '<a class="btn sm" href="/admin/photostudio.html?p=' + encodeURIComponent(A.PF.id) + '" title="Remove background, enhance and change the background">Photo Studio</a>' : '');
     if (g) g.innerHTML = A.PF.gallery.map(function (id, i) { return '<div class="thumb" style="' + A.bg(id) + '"><button data-act="pfGalRm" data-i="' + i + '" aria-label="Remove image">×</button></div>'; }).join('') + '<button class="btn sm" data-act="pfGalAdd">' + ic('plus') + ' Add image</button>';
   }
   A.pfImgs = pfImgs;
