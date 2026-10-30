@@ -12,13 +12,16 @@
   var MODEL_BASE = 'https://cdn.jsdelivr.net/gh/akashgupta0001/prabhat-website@main/models/';
   var MODELS = {
     fast: { parts: [MODEL_BASE + 'u2netp.onnx'], size: 320, norm: 'imagenet', mb: 5 },
-    hd: { parts: [MODEL_BASE + 'isnet-int8.part0', MODEL_BASE + 'isnet-int8.part1', MODEL_BASE + 'isnet-int8.part2'], size: 1024, norm: 'half', mb: 47 }
+    hd: { parts: [MODEL_BASE + 'isnet-int8.part0', MODEL_BASE + 'isnet-int8.part1', MODEL_BASE + 'isnet-int8.part2'], size: 1024, norm: 'half', mb: 47 },
+    person: { parts: [MODEL_BASE + 'human-int8.part0', MODEL_BASE + 'human-int8.part1', MODEL_BASE + 'human-int8.part2'], size: 320, norm: 'imagenet', mb: 44, refine: true }
   };
+  MODELS.fast.refine = true;  // low-resolution masks get their edges snapped to the photo
+  var isPhone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
   var MAX_SRC = 2560;
 
-  var DEF = { tight: 20, ex: 0, co: 0, sa: 0, wa: 0, sh: 0, bg: 'none', bgB: 0, bgBlur: 0, asp: '1', sc: 1, x: 0.5, y: 0.5, rot: 0, flip: false, shad: 'under', shO: 45, refl: 0 };
+  var DEF = { tight: 12, ex: 0, co: 0, sa: 0, wa: 0, sh: 0, bg: 'none', bgB: 0, bgBlur: 0, asp: '1', sc: 1, x: 0.5, y: 0.5, rot: 0, flip: false, shad: 'under', shO: 45, refl: 0 };
   var P = Object.assign({}, DEF), hist = [JSON.stringify(P)], hi = 0;
-  var st = { src: null, name: 'photo', prob: null, probSize: 0, cut: false, restore: null, erase: null, mask: null, subj: null, box: null, enh: null, enhKey: '', bgImgs: {}, product: null, brush: 'off', compare: false, quality: 'fast' };
+  var st = { src: null, name: 'photo', prob: null, probSize: 0, cut: false, restore: null, erase: null, mask: null, subj: null, box: null, enh: null, enhKey: '', bgImgs: {}, product: null, brush: 'off', compare: false, quality: isPhone ? 'fast' : 'hd', mode: 'product' };
   var products = [], db = null, assets = null;
 
   /* ---------- small UI helpers ---------- */
@@ -48,7 +51,7 @@
     return (window.createImageBitmap ? createImageBitmap(blob, { imageOrientation: 'from-image' }).catch(function () { return createImageBitmap(blob); }) : Promise.reject(new Error('This browser is too old.')))
       .then(function (bm) {
         st.src = toCanvas(bm); st.name = (name || 'photo').replace(/\.[a-z0-9]+$/i, ''); st.product = product || null;
-        st.cut = false; st.prob = null; st.restore = st.erase = st.mask = st.subj = st.enh = null; st.box = null; st.enhKey = '';
+        st.cut = false; st.prob = null; st.base = null; st.restore = st.erase = st.mask = st.subj = st.enh = null; st.box = null; st.enhKey = '';
         P = Object.assign({}, DEF, { asp: 'orig' }); hist = [JSON.stringify(P)]; hi = 0; undoBtns();
         $('#start').hidden = true; $('#ed').hidden = false; step(2); $('#edgeCard').hidden = true;
         if (product) $('#sProd').value = product.id;
@@ -135,22 +138,95 @@
           for (var k = 0; k < o.length; k++) { if (o[k] < lo) lo = o[k]; if (o[k] > hiV) hiV = o[k]; }
           var prob = new Float32Array(o.length), r = hiV - lo || 1;
           for (k = 0; k < o.length; k++) prob[k] = (o[k] - lo) / r;
-          return { prob: prob, size: S };
+          return { prob: prob, size: S, key: key };
         });
       });
     });
   }
 
+  /* ---------- edge refinement: colour guided filter ----------
+     The AI mask is low resolution. This snaps its edges to the real outline in the photo:
+     it is solved at up to 1024 px and then applied at full photo size. */
+  function boxBlur(src, w, h, r) {
+    var tmp = new Float32Array(w * h), out = new Float32Array(w * h), x, y, s, i, n = 2 * r + 1;
+    for (y = 0; y < h; y++) {
+      var row = y * w; s = 0;
+      for (x = -r; x <= r; x++) s += src[row + Math.min(w - 1, Math.max(0, x))];
+      for (x = 0; x < w; x++) { tmp[row + x] = s / n; s += src[row + Math.min(w - 1, x + r + 1)] - src[row + Math.max(0, x - r)]; }
+    }
+    for (x = 0; x < w; x++) {
+      s = 0;
+      for (y = -r; y <= r; y++) s += tmp[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (y = 0; y < h; y++) { out[y * w + x] = s / n; s += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; }
+    }
+    return out;
+  }
+  function guidedRefine() {
+    var W = st.src.width, H = st.src.height, k = Math.min(1, 1024 / Math.max(W, H)), w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k)), n = w * h;
+    var c = canvas(w, h), g = ctx2(c); g.drawImage(st.src, 0, 0, w, h); var d = g.getImageData(0, 0, w, h).data;
+    var S = st.probSize, pc = canvas(S, S), pg = ctx2(pc), pid = pg.createImageData(S, S);
+    for (var i = 0; i < st.prob.length; i++) { pid.data[i * 4 + 3] = st.prob[i] * 255; }
+    pg.putImageData(pid, 0, 0); var up = canvas(w, h), ug = ctx2(up); ug.drawImage(pc, 0, 0, w, h); var ud = ug.getImageData(0, 0, w, h).data;
+    var R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n), Pp = new Float32Array(n);
+    for (i = 0; i < n; i++) { R[i] = d[i * 4] / 255; G[i] = d[i * 4 + 1] / 255; B[i] = d[i * 4 + 2] / 255; Pp[i] = ud[i * 4 + 3] / 255; }
+    var r = Math.max(3, Math.round(Math.max(w, h) / 128)), eps = 1e-4;
+    function mul(a, b) { var o = new Float32Array(n); for (var j = 0; j < n; j++) o[j] = a[j] * b[j]; return o; }
+    var mR = boxBlur(R, w, h, r), mG = boxBlur(G, w, h, r), mB = boxBlur(B, w, h, r), mP = boxBlur(Pp, w, h, r);
+    var cR = boxBlur(mul(R, Pp), w, h, r), cG = boxBlur(mul(G, Pp), w, h, r), cB = boxBlur(mul(B, Pp), w, h, r);
+    var vRR = boxBlur(mul(R, R), w, h, r), vRG = boxBlur(mul(R, G), w, h, r), vRB = boxBlur(mul(R, B), w, h, r),
+        vGG = boxBlur(mul(G, G), w, h, r), vGB = boxBlur(mul(G, B), w, h, r), vBB = boxBlur(mul(B, B), w, h, r);
+    var aR = new Float32Array(n), aG = new Float32Array(n), aB = new Float32Array(n), bb = new Float32Array(n);
+    for (i = 0; i < n; i++) {
+      var rr = vRR[i] - mR[i] * mR[i] + eps, rg = vRG[i] - mR[i] * mG[i], rb = vRB[i] - mR[i] * mB[i],
+          gg = vGG[i] - mG[i] * mG[i] + eps, gb = vGB[i] - mG[i] * mB[i], b2 = vBB[i] - mB[i] * mB[i] + eps;
+      var xR = cR[i] - mR[i] * mP[i], xG = cG[i] - mG[i] * mP[i], xB = cB[i] - mB[i] * mP[i];
+      // inverse of the symmetric 3x3 covariance matrix
+      var i00 = gg * b2 - gb * gb, i01 = rb * gb - rg * b2, i02 = rg * gb - rb * gg, i11 = rr * b2 - rb * rb, i12 = rb * rg - rr * gb, i22 = rr * gg - rg * rg;
+      var det = rr * i00 + rg * i01 + rb * i02; if (Math.abs(det) < 1e-12) det = 1e-12;
+      aR[i] = (i00 * xR + i01 * xG + i02 * xB) / det; aG[i] = (i01 * xR + i11 * xG + i12 * xB) / det; aB[i] = (i02 * xR + i12 * xG + i22 * xB) / det;
+      bb[i] = mP[i] - aR[i] * mR[i] - aG[i] * mG[i] - aB[i] * mB[i];
+    }
+    aR = boxBlur(aR, w, h, r); aG = boxBlur(aG, w, h, r); aB = boxBlur(aB, w, h, r); bb = boxBlur(bb, w, h, r);
+    // apply at full size: q = a . I + b, with a and b smoothly scaled up
+    var fc = canvas(W, H), fg = ctx2(fc); fg.drawImage(st.src, 0, 0); var fd = fg.getImageData(0, 0, W, H).data, out = new Float32Array(W * H);
+    var sx = (w - 1) / Math.max(1, W - 1), sy = (h - 1) / Math.max(1, H - 1);
+    for (var y = 0; y < H; y++) {
+      var fy = y * sy, y0 = fy | 0, y1 = Math.min(h - 1, y0 + 1), ty = fy - y0;
+      for (var x = 0; x < W; x++) {
+        var fx = x * sx, x0 = fx | 0, x1 = Math.min(w - 1, x0 + 1), tx = fx - x0;
+        var i0 = y0 * w + x0, i1 = y0 * w + x1, i2 = y1 * w + x0, i3 = y1 * w + x1;
+        var w0 = (1 - tx) * (1 - ty), w1 = tx * (1 - ty), w2 = (1 - tx) * ty, w3 = tx * ty, p4 = (y * W + x) * 4;
+        var v = (aR[i0] * w0 + aR[i1] * w1 + aR[i2] * w2 + aR[i3] * w3) * fd[p4] / 255
+              + (aG[i0] * w0 + aG[i1] * w1 + aG[i2] * w2 + aG[i3] * w3) * fd[p4 + 1] / 255
+              + (aB[i0] * w0 + aB[i1] * w1 + aB[i2] * w2 + aB[i3] * w3) * fd[p4 + 2] / 255
+              + (bb[i0] * w0 + bb[i1] * w1 + bb[i2] * w2 + bb[i3] * w3);
+        out[y * W + x] = v < 0 ? 0 : v > 1 ? 1 : v;
+      }
+    }
+    return out;
+  }
+
   /* ---------- mask building ---------- */
   function buildMask() {
-    var S = st.probSize, W = st.src.width, H = st.src.height, t = P.tight / 100;
-    var small = canvas(S, S), g = ctx2(small), id = g.createImageData(S, S), d = id.data;
-    for (var i = 0, j = 0; i < st.prob.length; i++, j += 4) {
-      var a = (st.prob[i] - t) / Math.max(0.05, 1 - 2 * t); a = a < 0.02 ? 0 : a > 0.98 ? 1 : a;
-      d[j] = d[j + 1] = d[j + 2] = 255; d[j + 3] = a * 255;
+    var S = st.probSize, W = st.src.width, H = st.src.height, t = P.tight / 100 + (st.refine && st.probSize < 1024 && st.quality === 'fast' && st.mode !== 'person' ? 0.12 : 0);
+    var mask = canvas(W, H), mg = ctx2(mask);
+    if (st.refine) {
+      if (!st.base) st.base = guidedRefine();
+      var out = mg.createImageData(W, H), od = out.data, bs = st.base;
+      for (var p = 0, q = 0; p < bs.length; p++, q += 4) {
+        var v = (bs[p] - t) / Math.max(0.05, 1 - 2 * t); v = v < 0.02 ? 0 : v > 0.98 ? 1 : v;
+        od[q] = od[q + 1] = od[q + 2] = 255; od[q + 3] = v * 255;
+      }
+      mg.putImageData(out, 0, 0);
+    } else {
+      var small = canvas(S, S), g = ctx2(small), id = g.createImageData(S, S), d = id.data;
+      for (var i = 0, j = 0; i < st.prob.length; i++, j += 4) {
+        var a = (st.prob[i] - t) / Math.max(0.05, 1 - 2 * t); a = a < 0.02 ? 0 : a > 0.98 ? 1 : a;
+        d[j] = d[j + 1] = d[j + 2] = 255; d[j + 3] = a * 255;
+      }
+      g.putImageData(id, 0, 0);
+      mg.drawImage(small, 0, 0, W, H);
     }
-    g.putImageData(id, 0, 0);
-    var mask = canvas(W, H), mg = ctx2(mask); mg.drawImage(small, 0, 0, W, H);
     if (st.restore) { mg.globalCompositeOperation = 'source-over'; mg.drawImage(st.restore, 0, 0); }
     if (st.erase) { mg.globalCompositeOperation = 'destination-out'; mg.drawImage(st.erase, 0, 0); }
     mg.globalCompositeOperation = 'source-over';
@@ -285,7 +361,11 @@
   function sync() {
     $$('[data-k]').forEach(function (el) { var v = P[el.dataset.k]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; });
     chips('#shad', 's', P.shad); chips('#asp', 'a', P.asp); chips('#qChips', 'q', st.quality);
-    $('#qNote').textContent = st.quality === 'hd' ? 'Sharper edges, but downloads 47 MB each time. Best on a computer with Wi-Fi.' : 'Runs on this device with a small 5 MB AI model. Your photo is not uploaded or stored anywhere.';
+    chips('#modeChips', 'm', st.mode);
+    $('#qChips').parentNode.querySelectorAll('.lbl')[1].hidden = $('#qChips').hidden = st.mode === 'person';
+    $('#qNote').textContent = (st.mode === 'person' ? 'Keeps only the people (hair and clothes included). Loads a 44 MB AI model.'
+      : st.quality === 'hd' ? 'Clean, sharp edges. Loads a 47 MB AI model, best on Wi-Fi.' : 'Lighter 5 MB AI model for phones and slow internet. Edges are refined automatically.')
+      + ' The AI runs on this device. Nothing is uploaded or stored.';
     $$('#sw [data-bg]').forEach(function (b) { b.classList.toggle('on', b.dataset.bg === P.bg); });
     $$('#aiRes button').forEach(function (b) { b.classList.toggle('on', b.dataset.bg === P.bg); });
     dNote();
@@ -314,12 +394,12 @@
   /* cut out */
   function cutout() {
     if (st.cut) return Promise.resolve();
-    var key = st.quality;
+    var key = st.mode === 'person' ? 'person' : st.quality;
     return predict(key).catch(function (e) {
       if (key === 'hd') { toast('HD could not run on this device, using Standard instead.', true); st.quality = 'fast'; sync(); return predict('fast'); }
       throw e;
     }).then(function (r) {
-      st.prob = r.prob; st.probSize = r.size; st.cut = true; st._tight = P.tight;
+      st.base = null; st.prob = r.prob; st.probSize = r.size; st.refine = !!MODELS[r.key].refine; st.cut = true; st._tight = P.tight;
       st.restore = canvas(st.src.width, st.src.height); st.erase = canvas(st.src.width, st.src.height);
       buildMask();
       P.asp = '1'; P.sc = 1; P.x = 0.5; P.y = 0.5; commit();
@@ -327,7 +407,9 @@
       busy(false); sync(); render();
     }).catch(function (e) { busy(false); toast('Background removal failed: ' + (e.message || e) + '. Please try again.', true); throw e; });
   }
-  $$('#qChips button').forEach(function (b) { b.onclick = function () { st.quality = b.dataset.q; sync(); }; });
+  function recutHint() { if (st.cut) { st.cut = false; st.prob = null; $('#edgeCard').hidden = true; render(); toast('Press Remove background to cut out again.'); } }
+  $$('#qChips button').forEach(function (b) { b.onclick = function () { if (st.quality === b.dataset.q) return; st.quality = b.dataset.q; sync(); recutHint(); }; });
+  $$('#modeChips button').forEach(function (b) { b.onclick = function () { if (st.mode === b.dataset.m) return; st.mode = b.dataset.m; sync(); recutHint(); }; });
   $('#cut').onclick = function () { cutout().catch(function () {}); };
   $('#magic').onclick = function () {
     cutout().then(function () {

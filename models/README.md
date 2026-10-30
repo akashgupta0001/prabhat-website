@@ -4,3 +4,4 @@ mirror when someone uses Photo Studio, so the website stays light.
 
 - isnet-int8.part0-2: ISNet general-use (Apache-2.0), weights quantised to int8 (47 MB)
 - u2netp.onnx: U2-Net-p (Apache-2.0), fast model (4.5 MB)
+- human-int8.part0-2: U2-Net human segmentation (Apache-2.0), weights quantised to int8 (44 MB), used for "Person" photos

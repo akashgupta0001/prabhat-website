@@ -60,9 +60,11 @@
       <button class="btn pri wide big" id="magic">✨ One-click magic</button>
       <p class="muted c">Removes the background, enhances gently and places the product on clean white.</p>
       <div class="card">
-        <span class="lbl">AI quality</span>
-        <div class="chips" id="qChips"><button data-q="fast" class="on">Standard (5 MB)</button><button data-q="hd">HD edges (47 MB)</button></div>
-        <p class="muted s" id="qNote">Runs on this device with a small 5 MB AI model. Your photo is not uploaded or stored anywhere.</p>
+        <span class="lbl">What's in the photo?</span>
+        <div class="chips" id="modeChips"><button data-m="product" class="on">Product</button><button data-m="person">Person</button><button data-m="both">Product + person</button></div>
+        <span class="lbl">Edge quality</span>
+        <div class="chips" id="qChips"><button data-q="hd">HD edges</button><button data-q="fast">Standard (light)</button></div>
+        <p class="muted s" id="qNote"></p>
         <button class="btn wide" id="cut">Remove background</button>
       </div>
       <div class="card" id="edgeCard" hidden>
@@ -70,7 +72,7 @@
         <div class="chips" id="brush"><button data-b="off" class="on">Off</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
         <p class="muted s" id="brushNote">Choose Restore or Erase, then paint on the photo.</p>
         <div class="sl"><span>Brush size</span><input type="range" id="bsz" min="5" max="200" value="40"></div>
-        <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="20"></div>
+        <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="12"></div>
         <button class="btn ghost wide" id="maskReset">Undo all brush edits</button>
       </div>
     </div>
