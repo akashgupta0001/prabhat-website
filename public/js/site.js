@@ -5,13 +5,14 @@
   var body = document.body, page = body.dataset.page || '';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-  var ext = function (id) { return /^https?:\/\//.test(id); };
+  var ext = function (id) { return /^https?:\/\//.test(id) || /^\/api\/dbx\//.test(id); };
   var img = function (id) { return ext(id) ? id : '/img/' + encodeURIComponent(id); };
-  var wq = function (id, w) { return ext(id) ? id : img(id) + '?w=' + w; };
+  var dbx = function (id) { return /^\/api\/dbx\//.test(id); };
+  var wq = function (id, w) { return dbx(id) ? id + '&w=' + w : ext(id) ? id : img(id) + '?w=' + w; };
   // Responsive HD photos: the browser picks the sharpest copy needed for the screen.
   var CARD = '(max-width: 560px) 100vw, (max-width: 900px) 50vw, 360px';
-  var srcset = function (id) { var u = img(id); if (ext(id)) return u + ' 1600w'; return u + '?w=480 480w, ' + u + '?w=960 960w, ' + u + '?w=1600 1600w, ' + u + ' 2560w'; };
-  var pic = function (id, sizes) { return (ext(id) ? 'referrerpolicy="no-referrer" ' : '') + 'src="' + wq(id, 960) + '" srcset="' + srcset(id) + '" sizes="' + (sizes || CARD) + '" decoding="async"'; };
+  var srcset = function (id) { var u = img(id); if (dbx(id)) return u + '&w=480 480w, ' + u + '&w=960 960w, ' + u + '&w=1600 1600w'; if (ext(id)) return u + ' 1600w'; return u + '?w=480 480w, ' + u + '?w=960 960w, ' + u + '?w=1600 1600w, ' + u + ' 2560w'; };
+  var pic = function (id, sizes) { return (ext(id) && !dbx(id) ? 'referrerpolicy="no-referrer" ' : '') + 'src="' + wq(id, 960) + '" srcset="' + srcset(id) + '" sizes="' + (sizes || CARD) + '" decoding="async"'; };
 
   var DEFAULTS = { settings: { company: 'PRABHAT INDUSTRIES', phone: '9818185161', whatsapp: '9818185161', location: 'Bahadurgarh, Haryana, India' }, home: null, cats: [], vars: [], feats: [], brands: [], menu: [], pages: [], products: [] };
   var D = DEFAULTS;
@@ -150,7 +151,7 @@
   function card(p) {
     var url = '/product?s=' + encodeURIComponent(p.slug || p.id), el = document.createElement('article');
     el.className = 'pcard';
-    el.innerHTML = '<a class="imgl" href="' + url + '" aria-label="View ' + esc(p.name) + '">' + (p.img ? '<img class="pimg" loading="lazy" alt="' + esc(p.name) + '" ' + pic(p.img) + '>' : PH) + '</a>' +
+    el.innerHTML = '<a class="imgl" href="' + url + '" aria-label="View ' + esc(p.name) + '">' + (p.img || p.dbxFolder ? '<img class="pimg" loading="lazy" alt="' + esc(p.name) + '" ' + pic(p.img || '/api/dbx/img?p=' + encodeURIComponent(p.id) + '&i=0') + '>' : PH) + '</a>' +
       '<div class="pbody"><span class="code">' + esc(p.sku) + '</span><h3><a href="' + url + '">' + esc(p.name) + '</a></h3>' +
       '<span class="meta">' + esc([brandName(p.brand), catOf(p)].filter(Boolean).join(' · ')) + '</span>' + priceHTML(p) +
       '<div class="pbtns"><a class="btn ghost" href="' + url + '">View details</a><a class="btn accent" target="_blank" rel="noopener" href="' + productWa(p) + '">WhatsApp</a></div></div>';
@@ -327,7 +328,8 @@
     var root = $('#product'); if (!root) return;
     var s = new URLSearchParams(location.search).get('s') || '', p = D.products.filter(function (x) { return x.slug === s || x.id === s; })[0];
     if (!p) { root.innerHTML = '<div class="empty"><b>We could not find this model.</b><br><span>It may have been removed or renamed.</span><br><br><a class="btn brand" href="/catalogue">Browse the catalogue</a></div>'; setMeta('Model not found | ' + COMPANY); return; }
-    var pics = [p.img].concat(p.gallery || []).concat(p.dropbox || []).filter(function (x, i, a) { return x && a.indexOf(x) === i; }), cd = 'Contact us for details';
+    if (p.dbxFolder && !p._dbx) { p._dbx = []; fetch('/api/dbx/list?p=' + encodeURIComponent(p.id)).then(function (r) { return r.json(); }).then(function (j) { if (j && j.images && j.images.length) { p._dbx = j.images; renderProduct(); } }).catch(function () {}); }
+    var pics = [p.img].concat(p.gallery || []).concat(p._dbx || []).concat(p.dropbox || []).filter(function (x, i, a) { return x && a.indexOf(x) === i; }), cd = 'Contact us for details';
     var cats = (p.catIds || []).map(function (i) { return byId(D.cats, i); }).filter(Boolean);
     var spec = function (k, v) { return '<div><dt>' + k + '</dt><dd>' + (v && String(v).length ? esc(v) : cd) + '</dd></div>'; };
     var price = (mrpText(p) ? '<div><dt>MRP</dt><dd>' + esc(mrpText(p).replace('MRP ', '')) + '</dd></div>' : '') + (D.settings.showPrices && p.price !== '' && p.price != null ? '<div><dt>Selling price</dt><dd>' + rupee(p.price) + '</dd></div>' : '');

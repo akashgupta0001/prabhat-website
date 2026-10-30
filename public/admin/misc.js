@@ -220,3 +220,40 @@
     A.confirmBox({ title: 'Delete this note?', body: '<p><b>' + esc(n.title || 'Untitled') + '</b> will be deleted permanently.</p>', actions: [{ label: 'Delete', cls: 'dng', fn: async function () { if (await A.run(function () { return A.del('notes', id); }, 'Note deleted.')) A.closeModal(); } }] });
   };
 })(window.A);
+
+/* ----- Dropbox connection card (General Settings) ----- */
+(function (A) {
+  'use strict';
+  var esc = A.esc, V = A.V, base = V.settings;
+  A.DBX = A.DBX || { key: '', secret: '', code: '' };
+  document.addEventListener('input', function (e) { var id = e.target && e.target.id; if (/^dbx_(key|secret|code)$/.test(id)) A.DBX[id.slice(4)] = e.target.value; });
+  function api(method, body) {
+    return fetch('/api/admin/dropbox', { method: method, credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-requested-with': 'pi-admin' }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Request failed'); return j; }); });
+  }
+  A.dbxStatus = function () {
+    api('GET').then(function (j) {
+      var e = A.$('#dbxStatus'); if (!e) return;
+      e.innerHTML = j.connected ? '<span class="pill ok">Connected</span>' : '<span class="pill wn">Not connected</span>';
+      var k = A.$('#dbx_key'); if (k && j.key && !k.value) k.value = j.key;
+    }).catch(function () { var e = A.$('#dbxStatus'); if (e) e.textContent = 'Could not check'; });
+  };
+  A.dbxLink = function () {
+    var key = (A.DBX.key || '').trim(); if (!key) { A.toast('Enter the App key first.', 'err'); return; }
+    api('POST', { step: 'link', key: key }).then(function (j) { window.open(j.url, '_blank', 'noopener'); }).catch(function (e) { A.toast(e.message, 'err'); });
+  };
+  A.dbxConnect = function () {
+    api('POST', { key: A.DBX.key, secret: A.DBX.secret, code: A.DBX.code }).then(function () {
+      A.toast('Dropbox connected.'); A.log('Dropbox connected'); A.DBX.secret = ''; A.DBX.code = ''; A.$('#dbx_secret').value = ''; A.$('#dbx_code').value = ''; A.dbxStatus();
+    }).catch(function (e) { A.toast(e.message, 'err'); });
+  };
+  V.settings = function () {
+    setTimeout(A.dbxStatus, 60);
+    return base() + '<div class="card pad" style="max-width:720px;margin-top:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3 style="margin:0">Dropbox connection</h3><span id="dbxStatus">Checking...</span></div>' +
+      '<p class="cell-s">Needed once, so products can show every photo from a Dropbox folder. In the Dropbox App Console create an app (Scoped access, Full Dropbox) and turn on the permissions <b>files.metadata.read</b>, <b>files.content.read</b> and <b>sharing.read</b>. Then paste its App key and App secret below.</p>' +
+      '<div class="g2"><label class="fld"><span>App key</span><input id="dbx_key" autocomplete="off" value="' + esc(A.DBX.key) + '"></label><label class="fld"><span>App secret</span><input id="dbx_secret" type="password" autocomplete="off" value="' + esc(A.DBX.secret) + '"></label></div>' +
+      '<p style="margin:6px 0"><button class="btn sm" data-act="dbxLink">1. Open Dropbox and allow access</button></p>' +
+      '<label class="fld"><span>2. Paste the code Dropbox shows you</span><input id="dbx_code" autocomplete="off" value="' + esc(A.DBX.code) + '"></label>' +
+      '<button class="btn pri" data-act="dbxConnect">3. Connect Dropbox</button></div>';
+  };
+})(window.A);

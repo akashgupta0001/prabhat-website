@@ -23,7 +23,7 @@ export async function onRequestGet({ env, waitUntil }) {
   const products = (by.products || []).filter((p) => p.status === 'active').map((p) => {
     const o = {
       id: p.id, name: p.name, sku: p.sku, slug: p.slug, brand: p.brand, catIds: p.catIds || [], varIds: p.varIds || [], featIds: p.featIds || [], fx: Object.fromEntries(Object.entries(p).filter(([k]) => k.startsWith('fx_')).map(([k, v]) => [k.slice(3), v])),
-      desc: p.desc || '', img: p.img || (p.dropbox || [])[0] || '', dropbox: (p.dropbox || []).slice(0, 40), gallery: p.gallery || [], sizes: p.sizes || [], colours: p.colours || [], material: p.material || '',
+      desc: p.desc || '', img: p.img || (p.dropbox || [])[0] || '', dropbox: (p.dropbox || []).slice(0, 40), dbxFolder: /^https:\/\/([a-z0-9-]+\.)?dropbox\.com\/(scl\/fo|sh)\//i.test(p.dropboxFolder || ''), gallery: p.gallery || [], sizes: p.sizes || [], colours: p.colours || [], material: p.material || '',
       featured: !!p.featured, home: !!p.home, created: p.created || '', seoTitle: p.seoTitle || '', seoDesc: p.seoDesc || '',
     };
     o.mrp = p.mrp ?? ''; o.sizePrices = p.sizePrices || []; o.setOf = p.setOf || '';

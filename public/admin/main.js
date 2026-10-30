@@ -57,6 +57,7 @@
   function dataOf(t) { return t.dataset; }
 
   var ACT = {
+    dbxLink: function () { A.dbxLink(); }, dbxConnect: function () { A.dbxConnect(); },
     pfSzAdd: function () { A.pfSizesRead(); A.PF.sp.push({ size: '', mrp: '' }); A.pfSizes(); var z = document.querySelectorAll('#pfSizes .pz'); if (z.length) z[z.length - 1].focus(); },
     pfSzRm: function (t) { A.pfSizesRead(); A.PF.sp.splice(+t.dataset.i, 1); A.pfSizes(); },
     pfSzQuick: function () {

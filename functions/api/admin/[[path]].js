@@ -1,6 +1,7 @@
 import { init, listCol, getDoc, putStmt, delStmt } from '../../../lib/db.js';
 import { json, bad, COLLECTIONS, ID_RE, randomId } from '../../../lib/util.js';
 import { getUser, sameOriginWrite } from '../../../lib/auth.js';
+import { connect as dbxConnect, getCreds as dbxCreds, authUrl as dbxAuthUrl } from '../../../lib/dropbox.js';
 import { putImage, maxBytes, hasR2, WIDTHS } from '../../../lib/images.js';
 
 const MAX_DOC = 900 * 1024;
@@ -25,6 +26,20 @@ export async function onRequest({ request, env, params }) {
   const p = params.path || [];
   const m = request.method;
   const [a, col, id] = p;
+
+  // ---- Dropbox connection (admin only) ----
+  if (a === 'dropbox' && m === 'GET') {
+    const c = await dbxCreds(env);
+    return json({ connected: !!(c && c.refresh), key: c ? c.key : '', since: c ? c.connected || '' : '' });
+  }
+  if (a === 'dropbox' && m === 'POST') {
+    let b; try { b = await request.json(); } catch { return bad('Invalid request.'); }
+    const key = String(b.key || '').trim(), secret = String(b.secret || '').trim(), code = String(b.code || '').trim();
+    if (b.step === 'link') { if (!key) return bad('Enter the App key first.'); return json({ url: dbxAuthUrl(key) }); }
+    if (!key || !secret || !code) return bad('Enter the App key, App secret and the code Dropbox gave you.');
+    try { await dbxConnect(env, { key, secret, code }); } catch (e) { return bad(e.message || 'Could not connect to Dropbox.'); }
+    return json({ ok: true });
+  }
 
   // ---- read ----
   if (a === 'col' && m === 'GET') {
