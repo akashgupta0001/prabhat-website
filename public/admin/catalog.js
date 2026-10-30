@@ -72,6 +72,7 @@
       '<label class="fld"><span>Status</span><select id="pf_status">' + [['draft', 'Draft'], ['active', 'Active'], ['archived', 'Archived']].map(function (o) { return '<option value="' + o[0] + '"' + (p.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' + t('URL slug', 'pf_slug', p.slug, 'text', 'auto from name') + '</div>' +
       '<label class="fld"><span>Description</span><textarea id="pf_desc">' + esc(p.desc || '') + '</textarea></label>' +
       '<div class="fld"><span>Main image</span><div class="gal" id="pfMain"></div></div><div class="fld"><span>Gallery images</span><div class="gal" id="pfGal"></div></div>' +
+      '<label class="fld"><span>Dropbox photo links (optional, one link per line)</span><textarea id="pf_dbx" rows="4" placeholder="Paste Dropbox share links of the photos, one per line">' + esc((p.dropbox || []).join('\n')) + '</textarea><small class="cell-s">In Dropbox open each photo, click Share, Copy link and paste here. Folder links cannot be used because Dropbox does not let a website list a folder.</small></label>' +
       '<div class="fld"><span>Categories</span>' + chips('cats', 'catIds', p.catIds || []) + '</div><div class="fld"><span>Varieties</span>' + chips('vars', 'varIds', p.varIds || []) + '</div><div class="fld"><span>Features</span>' + chips('feats', 'featIds', p.featIds || []) + '</div>' +
       A.taxKeys().slice(3).map(function (k) { return '<div class="fld"><span>' + esc(A.TAX[k].plural) + '</span>' + chips(k, A.TAX[k].field, p[A.TAX[k].field] || []) + '</div>'; }).join('') +
       '<div class="g2">' + t('Available colours (comma separated)', 'pf_colours', (p.colours || []).join(', ')) + t('Sold as a set of how many sizes? (optional)', 'pf_setof', p.setOf, 'number', 'e.g. 5') + '</div>' + t('Material details', 'pf_material', p.material) +
@@ -103,7 +104,12 @@
     var grp = function (f) { return Array.prototype.map.call(document.querySelectorAll('#modal input[data-grp="' + f + '"]:checked'), function (e) { return e.value; }); };
     var list = function (s) { return s.split(',').map(function (x) { return x.trim(); }).filter(Boolean); };
     var old = id ? S.products.find(function (p) { return p.id === id; }) : null;
-    var o = Object.assign({}, old || {}, { id: id || undefined, name: name, sku: sku, slug: slug, brand: v('pf_brand'), status: v('pf_status'), desc: v('pf_desc'), img: A.PF.img, gallery: A.PF.gallery, catIds: grp('catIds'), varIds: grp('varIds'), featIds: grp('featIds'),
+    var dbx = []; var bad = '';
+    v('pf_dbx').split(/\s+/).filter(Boolean).forEach(function (u) {
+      try { var x = new URL(u); if (!/(^|\.)dropbox\.com$/.test(x.hostname)) { bad = 'Only Dropbox links are allowed in the Dropbox box: ' + u; return; } if (/^\/(scl\/fo|sh)\//.test(x.pathname)) { bad = 'That looks like a folder link. Open each photo in Dropbox, click Share, Copy link, and paste those links here.'; return; } x.searchParams.delete('dl'); x.searchParams.set('raw', '1'); dbx.push(x.toString()); } catch (e) { bad = 'This is not a valid link: ' + u; }
+    });
+    if (bad) return fail(bad);
+    var o = Object.assign({}, old || {}, { id: id || undefined, name: name, sku: sku, slug: slug, brand: v('pf_brand'), status: v('pf_status'), desc: v('pf_desc'), img: A.PF.img, gallery: A.PF.gallery, dropbox: dbx, catIds: grp('catIds'), varIds: grp('varIds'), featIds: grp('featIds'),
       sizes: (A.PF.sp || []).filter(function (r) { return r.size; }).map(function (r) { return r.size; }), sizePrices: (A.PF.sp || []).filter(function (r) { return r.size; }).map(function (r) { return { size: r.size, mrp: r.mrp === '' || r.mrp == null ? '' : Number(r.mrp) }; }), setOf: v('pf_setof') === '' ? '' : Number(v('pf_setof')), colours: list(v('pf_colours')), material: v('pf_material'), mrp: mrp, price: price, stock: stock, featured: v('pf_featured'), home: v('pf_home'), seoTitle: v('pf_seot'), seoDesc: v('pf_seod') });
     A.taxKeys().slice(3).forEach(function (k) { o[A.TAX[k].field] = grp(A.TAX[k].field); });
     if (await A.run(function () { return A.save('products', o); }, 'Product saved.')) { A.log('Product ' + (id ? 'updated' : 'added') + ': ' + name); A.closeModal(); }
