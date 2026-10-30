@@ -64,7 +64,7 @@
   A.pfImgs = pfImgs;
   A.productForm = function (id) {
     var p = id ? S.products.find(function (x) { return x.id === id; }) : null; p = p ? A.clone(p) : { status: 'draft', brand: (S.brands[0] || {}).id || '', catIds: [], varIds: [], featIds: [], sizes: [], colours: [] };
-    A.PF = { img: p.img || '', gallery: (p.gallery || []).slice(), id: id || '' };
+    A.PF = { img: p.img || '', gallery: (p.gallery || []).slice(), id: id || '', sp: ((p.sizePrices && p.sizePrices.length) ? p.sizePrices : (p.sizes || []).map(function (z) { return { size: z, mrp: '' }; })).map(function (r) { return { size: r.size, mrp: r.mrp }; }) };
     function t(label, idn, v, type, ph) { return '<label class="fld"><span>' + label + '</span><input type="' + (type || 'text') + '" id="' + idn + '" value="' + esc(v == null ? '' : v) + '"' + (ph ? ' placeholder="' + ph + '"' : '') + '></label>'; }
     A.modal('<div class="sh-h"><h3>' + (id ? 'Edit Product' : 'Add Product') + '</h3><button class="ic-btn" data-act="closeModal" aria-label="Close">' + ic('x') + '</button></div><div class="sh-b">' +
       '<div class="g2">' + t('Product name *', 'pf_name', p.name) + t('SKU / model number *', 'pf_sku', p.sku) + '</div>' +
@@ -74,15 +74,25 @@
       '<div class="fld"><span>Main image</span><div class="gal" id="pfMain"></div></div><div class="fld"><span>Gallery images</span><div class="gal" id="pfGal"></div></div>' +
       '<div class="fld"><span>Categories</span>' + chips('cats', 'catIds', p.catIds || []) + '</div><div class="fld"><span>Varieties</span>' + chips('vars', 'varIds', p.varIds || []) + '</div><div class="fld"><span>Features</span>' + chips('feats', 'featIds', p.featIds || []) + '</div>' +
       A.taxKeys().slice(3).map(function (k) { return '<div class="fld"><span>' + esc(A.TAX[k].plural) + '</span>' + chips(k, A.TAX[k].field, p[A.TAX[k].field] || []) + '</div>'; }).join('') +
-      '<div class="g2">' + t('Available sizes (comma separated)', 'pf_sizes', (p.sizes || []).join(', ')) + t('Available colours (comma separated)', 'pf_colours', (p.colours || []).join(', ')) + '</div>' + t('Material details', 'pf_material', p.material) +
-      '<div class="g3">' + t('MRP (optional)', 'pf_mrp', p.mrp, 'number') + t('Selling price (optional)', 'pf_price', p.price, 'number') + t('Stock quantity (optional)', 'pf_stock', p.stock, 'number') + '</div>' +
+      '<div class="g2">' + t('Available colours (comma separated)', 'pf_colours', (p.colours || []).join(', ')) + t('Sold as a set of how many sizes? (optional)', 'pf_setof', p.setOf, 'number', 'e.g. 5') + '</div>' + t('Material details', 'pf_material', p.material) +
+      '<div class="fld"><span>Sizes and MRP (each size can have its own MRP)</span><div id="pfSizes"></div></div>' +
+      '<div class="g3">' + t('Default MRP (used when a size has no MRP of its own)', 'pf_mrp', p.mrp, 'number') + t('Selling price (optional)', 'pf_price', p.price, 'number') + t('Stock quantity (optional)', 'pf_stock', p.stock, 'number') + '</div>' +
       '<div class="g2"><label class="row-sw"><label class="sw"><input type="checkbox" id="pf_featured" ' + (p.featured ? 'checked' : '') + '><i></i></label><span>Featured product</span></label><label class="row-sw"><label class="sw"><input type="checkbox" id="pf_home" ' + (p.home ? 'checked' : '') + '><i></i></label><span>Show on homepage</span></label></div>' +
       '<div class="g2">' + t('SEO title', 'pf_seot', p.seoTitle) + t('SEO description', 'pf_seod', p.seoDesc) + '</div><p class="err" id="pf_err" role="alert"></p></div>' +
       '<div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveProduct" data-id="' + (id || '') + '">Save Product</button></div>', 'lg');
-    pfImgs();
+    pfImgs(); A.pfSizes();
+  };
+  A.pfSizesRead = function () {
+    var z = document.querySelectorAll('#pfSizes .pz'), m = document.querySelectorAll('#pfSizes .pm');
+    if (z.length) A.PF.sp = Array.prototype.map.call(z, function (e, i) { return { size: e.value.trim(), mrp: m[i].value }; });
+  };
+  A.pfSizes = function () {
+    var g = A.$('#pfSizes'); if (!g) return;
+    g.innerHTML = '<div class="szform">' + A.PF.sp.map(function (r, i) { return '<div class="szr"><input class="pz" aria-label="Size" placeholder="Size e.g. 6" value="' + esc(r.size) + '"><input class="pm" type="number" min="0" aria-label="MRP for this size" placeholder="MRP ₹" value="' + esc(r.mrp == null ? '' : r.mrp) + '"><button type="button" class="ibtn r" data-act="pfSzRm" data-i="' + i + '" aria-label="Remove size">' + ic('trash') + '</button></div>'; }).join('') + '</div>' +
+      '<div class="szadd"><button type="button" class="btn sm" data-act="pfSzAdd">' + ic('plus') + ' Add size</button><input id="pfQuick" placeholder="Quick add: 6,7,8,9,10 or 6-10"><button type="button" class="btn sm" data-act="pfSzQuick">Add these sizes</button></div>';
   };
   A.saveProduct = async function (id) {
-    var v = A.mv, err = A.$('#pf_err'), name = v('pf_name').trim(), sku = v('pf_sku').trim();
+    A.pfSizesRead(); var v = A.mv, err = A.$('#pf_err'), name = v('pf_name').trim(), sku = v('pf_sku').trim();
     function fail(m) { err.textContent = m; }
     if (!name) return fail('Product name is required.'); if (!sku) return fail('SKU / model number is required.'); if (!v('pf_brand')) return fail('Choose a brand. Add one under Brand Management first.');
     if (S.products.some(function (p) { return p.id !== id && String(p.sku).toLowerCase() === sku.toLowerCase(); })) return fail('Another product already uses SKU "' + sku + '". SKUs must be unique.');
@@ -94,7 +104,7 @@
     var list = function (s) { return s.split(',').map(function (x) { return x.trim(); }).filter(Boolean); };
     var old = id ? S.products.find(function (p) { return p.id === id; }) : null;
     var o = Object.assign({}, old || {}, { id: id || undefined, name: name, sku: sku, slug: slug, brand: v('pf_brand'), status: v('pf_status'), desc: v('pf_desc'), img: A.PF.img, gallery: A.PF.gallery, catIds: grp('catIds'), varIds: grp('varIds'), featIds: grp('featIds'),
-      sizes: list(v('pf_sizes')), colours: list(v('pf_colours')), material: v('pf_material'), mrp: mrp, price: price, stock: stock, featured: v('pf_featured'), home: v('pf_home'), seoTitle: v('pf_seot'), seoDesc: v('pf_seod') });
+      sizes: (A.PF.sp || []).filter(function (r) { return r.size; }).map(function (r) { return r.size; }), sizePrices: (A.PF.sp || []).filter(function (r) { return r.size; }).map(function (r) { return { size: r.size, mrp: r.mrp === '' || r.mrp == null ? '' : Number(r.mrp) }; }), setOf: v('pf_setof') === '' ? '' : Number(v('pf_setof')), colours: list(v('pf_colours')), material: v('pf_material'), mrp: mrp, price: price, stock: stock, featured: v('pf_featured'), home: v('pf_home'), seoTitle: v('pf_seot'), seoDesc: v('pf_seod') });
     A.taxKeys().slice(3).forEach(function (k) { o[A.TAX[k].field] = grp(A.TAX[k].field); });
     if (await A.run(function () { return A.save('products', o); }, 'Product saved.')) { A.log('Product ' + (id ? 'updated' : 'added') + ': ' + name); A.closeModal(); }
   };

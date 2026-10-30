@@ -128,10 +128,22 @@
 
   /* ---------- product cards ---------- */
   function catOf(p) { var c = byId(D.cats, (p.catIds || [])[0]); return c ? c.name : ''; }
+  var rupee = function (x) { return '₹' + Number(x).toLocaleString('en-IN'); };
+  /* MRP can differ by size: rows with their own MRP, falling back to the product's default MRP */
+  function mrpRows(p) {
+    var d = Number(p.mrp) || 0;
+    return (p.sizePrices || []).map(function (r) { return { size: r.size, mrp: Number(r.mrp) || d }; }).filter(function (r) { return r.size; });
+  }
+  function mrpText(p) {
+    var v = mrpRows(p).map(function (r) { return r.mrp; }).filter(function (x) { return x > 0; }), d = Number(p.mrp) || 0; if (d) v.push(d);
+    if (!v.length) return '';
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v);
+    return lo === hi ? 'MRP ' + rupee(lo) : 'MRP ' + rupee(lo) + ' – ' + rupee(hi);
+  }
   function priceHTML(p) {
-    if (!D.settings.showPrices || p.price === '' || p.price == null) return '';
-    var n = function (x) { return '₹' + Number(x).toLocaleString('en-IN'); };
-    return '<span class="meta"><b>' + n(p.price) + '</b>' + (p.mrp && Number(p.mrp) > Number(p.price) ? ' <s style="opacity:.6">' + n(p.mrp) + '</s>' : '') + '</span>';
+    var m = mrpText(p), sell = D.settings.showPrices && p.price !== '' && p.price != null ? '<b>' + rupee(p.price) + '</b> ' : '';
+    if (!m && !sell) return '';
+    return '<span class="meta">' + sell + (m ? (sell ? '<s style="opacity:.6">' + m + '</s>' : '<b>' + m + '</b>') : '') + '</span>';
   }
   function card(p) {
     var url = '/product?s=' + encodeURIComponent(p.slug || p.id), el = document.createElement('article');
@@ -316,12 +328,14 @@
     var pics = [p.img].concat(p.gallery || []).filter(Boolean), cd = 'Contact us for details';
     var cats = (p.catIds || []).map(function (i) { return byId(D.cats, i); }).filter(Boolean);
     var spec = function (k, v) { return '<div><dt>' + k + '</dt><dd>' + (v && String(v).length ? esc(v) : cd) + '</dd></div>'; };
-    var price = D.settings.showPrices && p.price !== '' && p.price != null ? '<div><dt>Price</dt><dd>₹' + Number(p.price).toLocaleString('en-IN') + '</dd></div>' : '';
+    var price = (mrpText(p) ? '<div><dt>MRP</dt><dd>' + esc(mrpText(p).replace('MRP ', '')) + '</dd></div>' : '') + (D.settings.showPrices && p.price !== '' && p.price != null ? '<div><dt>Selling price</dt><dd>' + rupee(p.price) + '</dd></div>' : '');
+    var rows = mrpRows(p), allSizes = rows.length ? rows.map(function (r) { return r.size; }) : (p.sizes || []);
+    var sizeBlock = rows.length ? '<div class="sztab"><h3>Sizes &amp; MRP' + (p.setOf ? ' <small>Sold as a set of ' + esc(p.setOf) + ' sizes</small>' : '') + '</h3><div class="szrow">' + rows.map(function (r) { return '<div><b>' + esc(r.size) + '</b><span>' + (r.mrp ? rupee(r.mrp) : '—') + '</span></div>'; }).join('') + '</div></div>' : (p.setOf ? '<p class="fine" style="margin-top:12px"><b>Sold as a set of ' + esc(p.setOf) + ' sizes.</b></p>' : '');
     root.innerHTML = '<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <a href="/catalogue">Catalogue</a>' + (cats[0] ? ' <span>/</span> <a href="/catalogue?cat=' + encodeURIComponent(cats[0].slug || cats[0].id) + '">' + esc(cats[0].name) + '</a>' : '') + ' <span>/</span> <span>' + esc(p.name) + '</span></nav>' +
       '<div class="pdp"><div class="gal">' + (pics.length ? '<button type="button" class="zoomer" id="zoombtn" aria-label="Zoom photo"><img class="main" id="mainimg" alt="' + esc(p.name) + '" ' + pic(pics[0], PDP) + '><span class="zhint" aria-hidden="true">Tap to zoom</span></button>' : PH) + (pics.length > 1 ? '<div class="thumbs">' + pics.map(function (x, i) { return '<button type="button" data-i="' + i + '" aria-label="Photo ' + (i + 1) + '" aria-current="' + (i === 0) + '"><img alt="" src="' + img(x) + '?w=480"></button>'; }).join('') + '</div>' : '') + '</div>' +
       '<div><span class="brandtag">' + esc(p.sku) + '</span><h1>' + esc(p.name) + '</h1><div class="chips">' + (brandName(p.brand) ? '<span>' + esc(brandName(p.brand)) + '</span>' : '') + cats.map(function (c) { return '<a href="/catalogue?cat=' + encodeURIComponent(c.slug || c.id) + '">' + esc(c.name) + '</a>'; }).join('') + '</div>' +
       (p.desc ? '<p class="desc">' + esc(p.desc) + '</p>' : '') +
-      '<dl class="spec">' + spec('Brand', brandName(p.brand)) + spec('Model code', p.sku) + spec('Category', names(D.cats, p.catIds).join(', ')) + spec('Variety', names(D.vars, p.varIds).join(', ')) + spec('Features', names(D.feats, p.featIds).join(', ')) + spec('Sizes', (p.sizes || []).join(', ')) + spec('Colours', (p.colours || []).join(', ')) + spec('Material', p.material) + price + '</dl>' +
+      '<dl class="spec">' + spec('Brand', brandName(p.brand)) + spec('Model code', p.sku) + spec('Category', names(D.cats, p.catIds).join(', ')) + spec('Variety', names(D.vars, p.varIds).join(', ')) + spec('Features', names(D.feats, p.featIds).join(', ')) + spec('Sizes', allSizes.join(', ')) + spec('Colours', (p.colours || []).join(', ')) + spec('Material', p.material) + price + '</dl>' + sizeBlock +
       '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px"><a class="btn accent" target="_blank" rel="noopener" href="' + productWa(p) + '">Enquire on WhatsApp</a><a class="btn ghost" href="#enquire">Send an enquiry</a></div>' +
       '<p class="fine" style="font-size:13px;color:var(--muted);margin-top:14px">Availability, pricing, minimum order quantities and terms are confirmed by ' + esc(COMPANY) + '.</p>' +
       '<div class="enqbox" id="enquire"><h2 style="font-size:1.1rem;margin-bottom:12px">Enquire about this model</h2><div id="pform"></div></div></div></div><div id="related"></div>';

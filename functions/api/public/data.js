@@ -26,7 +26,8 @@ export async function onRequestGet({ env, waitUntil }) {
       desc: p.desc || '', img: p.img || '', gallery: p.gallery || [], sizes: p.sizes || [], colours: p.colours || [], material: p.material || '',
       featured: !!p.featured, home: !!p.home, created: p.created || '', seoTitle: p.seoTitle || '', seoDesc: p.seoDesc || '',
     };
-    if (settings.showPrices) { o.mrp = p.mrp ?? ''; o.price = p.price ?? ''; }
+    o.mrp = p.mrp ?? ''; o.sizePrices = p.sizePrices || []; o.setOf = p.setOf || '';
+    if (settings.showPrices) o.price = p.price ?? '';
     return o;
   });
 

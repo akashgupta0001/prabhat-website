@@ -291,3 +291,6 @@ table.t tr:hover td { background: var(--soft); }
 .ncard small{opacity:.65}
 .ncard .ibtn.on{color:#d97706}
 .ncol{display:flex;gap:10px}.ncol button{width:30px;height:30px;border-radius:50%;border:2px solid #c9d1dc;cursor:pointer}.ncol button.on{border-color:#1d4ed8;box-shadow:0 0 0 2px #fff inset}
+
+.szform{display:grid;gap:6px;margin-bottom:8px}.szr{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+.szadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.szadd input{flex:1;min-width:150px}

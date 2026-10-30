@@ -57,6 +57,13 @@
   function dataOf(t) { return t.dataset; }
 
   var ACT = {
+    pfSzAdd: function () { A.pfSizesRead(); A.PF.sp.push({ size: '', mrp: '' }); A.pfSizes(); var z = document.querySelectorAll('#pfSizes .pz'); if (z.length) z[z.length - 1].focus(); },
+    pfSzRm: function (t) { A.pfSizesRead(); A.PF.sp.splice(+t.dataset.i, 1); A.pfSizes(); },
+    pfSzQuick: function () {
+      A.pfSizesRead(); var s = (A.$('#pfQuick').value || '').trim(), out = [], m = s.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (m) { for (var n = +m[1]; n <= +m[2] && out.length < 40; n++) out.push(String(n)); } else out = s.split(/[,;\s]+/).filter(Boolean);
+      out.forEach(function (z) { if (!A.PF.sp.some(function (r) { return r.size === z; })) A.PF.sp.push({ size: z, mrp: '' }); }); A.pfSizes();
+    },
     addNote: function () { A.noteForm(); }, editNote: function (t) { A.noteForm(t.dataset.id); }, saveNote: function (t) { A.saveNote(t.dataset.id); }, delNote: function (t) { A.delNote(t.dataset.id); },
     pinNote: function (t) { var n = S.notes.find(function (x) { return x.id === t.dataset.id; }); if (n) A.run(function () { return A.col('notes').doc(n.id).update({ pinned: !n.pinned }); }); },
     noteColor: function (t) { A.NC = t.dataset.c; Array.prototype.forEach.call(document.querySelectorAll('#modal .ncol button'), function (b) { b.classList.toggle('on', b.dataset.c === A.NC); }); },

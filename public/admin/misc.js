@@ -165,7 +165,7 @@
   V.settings = function () {
     var s = S.settings;
     return head('General Settings', 'Company details and website options') + '<div class="card pad" style="max-width:720px"><div class="g2">' + t('Company name', 'st_name', s.company || 'PRABHAT INDUSTRIES') + t('Business phone', 'st_phone', s.phone || '9818185161') + t('WhatsApp number', 'st_wa', s.whatsapp || s.phone || '9818185161') + t('Location', 'st_loc', s.location || 'Bahadurgarh, Haryana, India') + '</div>' + t('Public website address', 'st_site', s.siteUrl, 'url', 'https://…') +
-      '<p class="cell-s">No email address or street address is set. Add them here only when the company confirms them.</p>' + t('Email (optional)', 'st_mail', s.email, 'text') + '<div class="row-sw"><label class="sw"><input type="checkbox" id="st_prices" ' + (s.showPrices ? 'checked' : '') + '><i></i></label><span>Show prices on the website</span></div><button class="btn pri" data-act="saveSettings">Save Settings</button></div>';
+      '<p class="cell-s">No email address or street address is set. Add them here only when the company confirms them.</p>' + t('Email (optional)', 'st_mail', s.email, 'text') + '<div class="row-sw"><label class="sw"><input type="checkbox" id="st_prices" ' + (s.showPrices ? 'checked' : '') + '><i></i></label><span>Also show selling price on the website (MRP always shows once you enter it)</span></div><button class="btn pri" data-act="saveSettings">Save Settings</button></div>';
   };
   V.seo = function () {
     var s = S.settings, miss = S.products.filter(function (p) { return !p.seoTitle || !p.seoDesc; }).length, missP = S.pages.filter(function (p) { return !p.seoTitle || !p.seoDesc; }).length;

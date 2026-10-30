@@ -280,3 +280,8 @@ h3.wm img{height:clamp(70px,9vw,104px);width:auto;max-width:100%;display:block}
 .pagehero.ph-ston{background:linear-gradient(120deg,#1b1514 0%,#2a0c0a 60%,#8a1c13 140%)}
 /* header: brand names highlighted */
 .head .brand small{color:#FF4B2B;font-weight:800;font-size:11.5px;letter-spacing:.2em;text-shadow:0 0 12px rgba(255,75,43,.35)}
+
+/* sizes & MRP */
+.sztab{margin-top:18px}.sztab h3{font-size:15px;margin:0 0 10px}.sztab h3 small{font-weight:600;color:var(--accent);margin-left:8px;font-size:12px}
+.szrow{display:flex;flex-wrap:wrap;gap:8px}.szrow div{border:1px solid var(--line);border-radius:12px;padding:8px 14px;text-align:center;min-width:72px;background:var(--card)}
+.szrow b{display:block;font:800 15px/1.2 var(--f-head)}.szrow span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
