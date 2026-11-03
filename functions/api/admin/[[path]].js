@@ -1,6 +1,7 @@
 import { init, listCol, getDoc, putStmt, delStmt } from '../../../lib/db.js';
 import { json, bad, COLLECTIONS, ID_RE, randomId } from '../../../lib/util.js';
 import { getUser, sameOriginWrite } from '../../../lib/auth.js';
+import { connect as socConnect, publish as socPublish, getSocial } from '../../../lib/social.js';
 import { connect as dbxConnect, getCreds as dbxCreds, authUrl as dbxAuthUrl } from '../../../lib/dropbox.js';
 import { putImage, maxBytes, hasR2, WIDTHS, deleteImageIfUnused } from '../../../lib/images.js';
 
@@ -26,6 +27,26 @@ export async function onRequest({ request, env, params }) {
   const p = params.path || [];
   const m = request.method;
   const [a, col, id] = p;
+
+  // ---- Facebook / Instagram posting (admin only) ----
+  if (a === 'social' && m === 'GET') {
+    const c = await getSocial(env);
+    return json({ connected: !!(c && c.pageToken), page: c ? c.pageName || '' : '', ig: c ? c.igName || '' : '', since: c ? c.connected || '' : '' });
+  }
+  if (a === 'social' && m === 'POST') {
+    let b; try { b = await request.json(); } catch { return bad('Invalid request.'); }
+    if (b.step === 'post') {
+      const caption = String(b.caption || '').slice(0, 2000), img = String(b.image || '');
+      if (!caption || !img) return bad('A caption and a photo are needed.');
+      if (!b.fb && !b.ig) return bad('Choose Facebook, Instagram or both.');
+      const origin = new URL(request.url).origin;
+      const imageUrl = /^https?:\/\//.test(img) ? img : origin + (img.startsWith('/') ? '' : '/') + img;
+      try { return json({ ok: true, result: await socPublish(env, { caption, imageUrl, fb: !!b.fb, ig: !!b.ig }) }); } catch (e) { return bad(e.message || 'Posting failed.'); }
+    }
+    const token = String(b.token || '').trim();
+    if (!token) return bad('Paste the access token first.');
+    try { return json({ ok: true, ...(await socConnect(env, { token, appId: String(b.appId || '').trim(), appSecret: String(b.appSecret || '').trim(), pageName: b.pageName })) }); } catch (e) { return bad(e.message || 'Could not connect.'); }
+  }
 
   // ---- Dropbox connection (admin only) ----
   if (a === 'dropbox' && m === 'GET') {

@@ -257,3 +257,57 @@
       '<button class="btn pri" data-act="dbxConnect">3. Connect Dropbox</button></div>';
   };
 })(window.A);
+
+/* ----- Facebook / Instagram posting ----- */
+(function (A) {
+  'use strict';
+  var esc = A.esc, V = A.V, base = V.settings;
+  A.SOC = A.SOC || { token: '', appId: '', appSecret: '', page: '' };
+  document.addEventListener('input', function (e) { var id = e.target && e.target.id; if (/^soc_(token|appId|appSecret|page)$/.test(id)) A.SOC[id.slice(4)] = e.target.value; });
+  function api(body) {
+    return fetch('/api/admin/social', { method: body ? 'POST' : 'GET', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-requested-with': 'pi-admin' }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Request failed'); return j; }); });
+  }
+  A.socStatus = function () {
+    api().then(function (j) {
+      var e = A.$('#socStatus'); if (!e) return; A.SOC.on = j.connected;
+      e.innerHTML = j.connected ? '<span class="pill ok">Connected: ' + esc(j.page) + (j.ig ? ' + Instagram @' + esc(j.ig) : ' (no Instagram linked)') + '</span>' : '<span class="pill wn">Not connected</span>';
+    }).catch(function () { var e = A.$('#socStatus'); if (e) e.textContent = 'Could not check'; });
+  };
+  A.socConnect = function () {
+    api({ token: A.SOC.token, appId: A.SOC.appId, appSecret: A.SOC.appSecret, pageName: A.SOC.page }).then(function (j) {
+      A.toast('Connected to ' + j.pageName + (j.igName ? ' and @' + j.igName : '') + '.'); A.log('Facebook/Instagram connected');
+      A.SOC.token = ''; A.SOC.appSecret = ''; var t = A.$('#soc_token'); if (t) t.value = ''; var s = A.$('#soc_appSecret'); if (s) s.value = ''; A.socStatus();
+    }).catch(function (e) { A.toast(e.message, 'err'); });
+  };
+  function caption(p) {
+    var S = A.S, br = (S.brands.find(function (b) { return b.id === p.brand; }) || {}).name || 'SUPREMLITE';
+    var price = p.mrp ? '\nMRP: Rs ' + p.mrp : '', sz = p.sizes && p.sizes.length ? '\nSizes: ' + p.sizes.join(', ') : '';
+    return br + ' - ' + p.name + (p.sku ? ' (' + p.sku + ')' : '') + price + sz + '\n\nOrder / dealer enquiry on WhatsApp: 9818185161\nhttps://supremlite.com/product?s=' + encodeURIComponent(p.slug || p.id) + '\n\n#footwear #' + br.toLowerCase().replace(/[^a-z0-9]/g, '') + ' #slippers #shoes #madeinindia';
+  }
+  A.socPostForm = function (id) {
+    var p = A.S.products.find(function (x) { return x.id === id; }); if (!p) return;
+    var img = p.img || (p.gallery && p.gallery[0]) || (p.dropboxFolder ? '/api/dbx/img?p=' + p.id + '&i=0&w=1600' : '');
+    if (!img) { A.toast('This product has no photo yet.', 'err'); return; }
+    A.SOC.post = { image: img };
+    A.modal('<div class="sh-h"><h3>Post to Facebook / Instagram</h3><button class="ic-btn" data-act="closeModal" aria-label="Close">' + A.ic('x') + '</button></div><div class="sh-b">' +
+      '<div class="thumb" style="width:110px;height:110px;' + A.bg(img) + '"></div>' +
+      '<label class="fld"><span>Caption (you can edit it)</span><textarea id="sp_cap" rows="9">' + esc(caption(p)) + '</textarea></label>' +
+      '<label><input type="checkbox" id="sp_fb" checked> Facebook Page</label> &nbsp; <label><input type="checkbox" id="sp_ig" checked> Instagram</label>' +
+      '<p class="cell-s">Instagram needs a JPEG or PNG photo. The post goes live immediately.</p></div><div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="socPost">Post now</button></div>', 'sm');
+  };
+  A.socPost = function () {
+    var b = { step: 'post', image: A.SOC.post.image, caption: A.mv('sp_cap'), fb: A.mv('sp_fb'), ig: A.mv('sp_ig') };
+    A.toast('Posting...'); api(b).then(function (j) { A.closeModal(); A.toast('Posted: ' + Object.keys(j.result).join(' and ') + '.'); A.log('Posted a product to social media'); }).catch(function (e) { A.toast(e.message, 'err'); });
+  };
+  var prev = V.settings;
+  V.settings = function () {
+    setTimeout(A.socStatus, 80);
+    return prev() + '<div class="card pad" style="max-width:720px;margin-top:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3 style="margin:0">Facebook and Instagram posting</h3><span id="socStatus">Checking...</span></div>' +
+      '<p class="cell-s">Paste the access token from Meta Graph API Explorer. Adding your App ID and App secret makes the connection permanent. Then use the share icon on any product to post it.</p>' +
+      '<label class="fld"><span>Access token</span><input id="soc_token" type="password" autocomplete="off" value="' + esc(A.SOC.token) + '"></label>' +
+      '<div class="g2"><label class="fld"><span>App ID</span><input id="soc_appId" autocomplete="off" value="' + esc(A.SOC.appId) + '"></label><label class="fld"><span>App secret</span><input id="soc_appSecret" type="password" autocomplete="off" value="' + esc(A.SOC.appSecret) + '"></label></div>' +
+      '<label class="fld"><span>Facebook Page name (only if you manage several Pages)</span><input id="soc_page" autocomplete="off" value="' + esc(A.SOC.page) + '"></label>' +
+      '<button class="btn pri" data-act="socConnect">Connect Facebook and Instagram</button></div>';
+  };
+})(window.A);
