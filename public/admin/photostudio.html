@@ -41,12 +41,15 @@
       <button class="tb" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="tb" id="redo" title="Redo">↷</button>
       <button class="tb" id="cmp">Before ⇆ After</button>
       <button class="tb" id="newPhoto">New photo</button>
+      <span class="zoom" role="group" aria-label="Zoom"><button class="tb" id="zOut" title="Zoom out">−</button><button class="tb zl" id="zLbl" title="Fit to screen">100%</button><button class="tb" id="zIn" title="Zoom in">+</button></span>
       <span class="status" id="status"></span>
     </div>
     <div class="stage" id="stage">
+      <div class="scroller" id="scroller"><div id="spacer"></div></div>
       <canvas id="cv"></canvas>
+      <canvas id="loupe" width="180" height="180" hidden></canvas>
       <div class="busy" id="busy" hidden><div class="spin"></div><b id="busyT">Working…</b><div class="bar" id="bar" hidden><i></i></div></div>
-      <div class="hint" id="hint" hidden>Drag to move · scroll or use Size to resize</div>
+      <div class="hint" id="hint" hidden>Drag the product to move · Ctrl + scroll or pinch to zoom</div>
     </div>
   </section>
 
@@ -69,10 +72,14 @@
       </div>
       <div class="card" id="edgeCard" hidden>
         <span class="lbl">Fix the edges</span>
-        <div class="chips" id="brush"><button data-b="off" class="on">Off</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
-        <p class="muted s" id="brushNote">Choose Restore or Erase, then paint on the photo.</p>
-        <div class="sl"><span>Brush size</span><input type="range" id="bsz" min="5" max="200" value="40"></div>
+        <div class="chips" id="brush"><button data-b="off" class="on">✋ Move</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
+        <p class="muted s" id="brushNote">Choose Restore or Erase, then paint on the photo. Zoom in for fine edges.</p>
+        <div class="chips" id="viewChips"><span class="muted s">Show:</span><button data-v="overlay" class="on">Red = removed</button><button data-v="cut">Cut-out only</button></div>
+        <div class="sl"><span>Brush size</span><input type="range" id="bsz" min="4" max="160" value="36"></div>
+        <div class="sl"><span>Brush softness</span><input type="range" id="bsoft" min="0" max="100" value="25"></div>
         <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="12"></div>
+        <div class="sl"><span>Edge sharpness</span><input type="range" data-k="esharp" min="10" max="60" value="25"></div>
+        <label class="ck"><input type="checkbox" data-k="dehalo"> Remove colour halos on edges</label>
         <button class="btn ghost wide" id="maskReset">Undo all brush edits</button>
       </div>
     </div>

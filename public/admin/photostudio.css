@@ -64,10 +64,15 @@ textarea { resize: vertical; }
 .tb.on { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
 .tb:disabled { opacity: .45; cursor: default; }
 .status { margin-left: auto; color: var(--muted); font-size: 12.5px; }
-.stage { position: relative; flex: 1; min-height: 320px; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; display: grid; place-items: center;
-  background-color: var(--chk-a); background-image: linear-gradient(45deg, var(--chk-b) 25%, transparent 25%), linear-gradient(-45deg, var(--chk-b) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--chk-b) 75%), linear-gradient(-45deg, transparent 75%, var(--chk-b) 75%); background-size: 22px 22px; background-position: 0 0, 0 11px, 11px -11px, -11px 0; }
-#cv { max-width: 100%; max-height: 100%; touch-action: none; cursor: grab; box-shadow: 0 2px 16px rgba(0,0,0,.12); }
-#cv.drag { cursor: grabbing; } #cv.paint { cursor: crosshair; }
+.stage { position: relative; flex: 1; min-height: 320px; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; background: var(--soft); }
+.scroller { position: absolute; inset: 0; overflow: auto; }
+#spacer { width: 1px; height: 1px; }
+#cv { position: absolute; left: 0; top: 0; touch-action: none; cursor: grab; }
+#cv.drag { cursor: grabbing; } #cv.paint { cursor: none; }
+#loupe { position: absolute; top: 12px; left: 12px; width: 180px; height: 180px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 18px rgba(0,0,0,.35); pointer-events: none; z-index: 4; background: #fff; }
+#loupe.right { left: auto; right: 28px; }
+.zoom { display: inline-flex; gap: 2px; margin-left: 6px; }
+.zoom .zl { min-width: 58px; font-variant-numeric: tabular-nums; }
 .busy { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 78%, transparent); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 5; text-align: center; padding: 16px; }
 .spin { width: 36px; height: 36px; border-radius: 50%; border: 4px solid var(--blue-soft); border-top-color: var(--blue); animation: sp .8s linear infinite; }
 @keyframes sp { to { transform: rotate(360deg); } }
@@ -119,4 +124,5 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
   .ttl small { display: none; }
   .back span { display: none; }
 }
+#viewChips { align-items: center; }
 @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
