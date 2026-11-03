@@ -159,6 +159,13 @@
   }
 
   /* ---------- enquiry form ---------- */
+    var MAPQ_DEFAULT = 'Supremlite Ston Prabhat Industries, Sector 17, Bahadurgarh, Haryana 124507';
+  function mapHTML() {
+    var q = (D.settings.mapQuery || '').trim() || MAPQ_DEFAULT;
+    return '<div class="sh"><span class="eyebrow">Find us</span><h2>Visit ' + esc(COMPANY) + '</h2><p>' + esc(D.settings.location || 'Bahadurgarh, Haryana, India') + '</p></div>' +
+      '<div class="mapbox"><iframe title="Map: ' + esc(COMPANY) + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed"></iframe></div>' +
+      '<p style="margin-top:12px"><a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) + '">Open in Google Maps</a></p>';
+  }
   function enquiryForm(host, o) {
     o = o || {};
     host.innerHTML = '<form class="form" novalidate><div class="hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>' +
@@ -248,6 +255,7 @@
     });
     out += '<section style="padding-top:0"><div class="band"><div><span class="eyebrow" style="color:#fff;opacity:.8">Wholesale &amp; business enquiries</span><h2 style="margin-top:12px">Your footwear business partner</h2><p>PRABHAT INDUSTRIES serves business buyers and individual customers through its footwear manufacturing and trading activities. Retailers, wholesalers, distributors and bulk buyers are welcome to enquire about available products, quantities and commercial terms.</p><div class="cta"><a class="btn accent" href="/wholesale#enquire">Send a wholesale enquiry</a><a class="btn light" href="/wholesale">How to enquire</a></div></div><ol class="steps"><li>Browse the catalogue and identify your preferred models.</li><li>Share the model codes, required sizes, colours and quantities.</li><li>Our team confirms availability, pricing, minimum order quantities and commercial terms.</li><li>Confirm your order once the details and terms are agreed.</li></ol></div></section>' +
       '<section style="padding-top:0"><div class="contact"><div><h2>Let\'s talk footwear</h2><p>Browse the catalogue and contact ' + esc(COMPANY) + ' to discuss your requirements.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn accent" href="/catalogue">View all products</a><a class="btn ghost" href="/contact">Contact us</a></div></div><ul class="facts">' + (D.settings.location ? '<li><span>Location</span><span>' + esc(D.settings.location) + '</span></li>' : '') + '<li><span>Phone / WhatsApp</span><span>' + esc(D.settings.phone || '') + '</span></li></ul></div></section>';
+    out += '<section style="padding-top:0">' + mapHTML() + '</section>';
     root.innerHTML = out;
     var fg = $('#featured'); if (fg && root.__feat) root.__feat.forEach(function (p) { fg.appendChild(card(p)); });
     startSlider(nSlides);
@@ -365,6 +373,7 @@
 
   /* ---------- static pages with live brand listings / forms ---------- */
   function renderExtras() {
+    var mp = $('#site-map'); if (mp) mp.innerHTML = mapHTML();
     var f = $('#enq-form'); if (f) enquiryForm(f, { type: f.dataset.type || 'general', button: f.dataset.button });
   }
 
