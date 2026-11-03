@@ -159,12 +159,12 @@
   }
 
   /* ---------- enquiry form ---------- */
-    var MAPQ_DEFAULT = 'Supremlite Ston Prabhat Industries, Sector 17, Bahadurgarh, Haryana 124507';
+    var MAPQ_DEFAULT = 'Plot no 24, Sector 17, HSIIDC, Bahadurgarh, Haryana 124508', MAPLINK_DEFAULT = 'https://maps.app.goo.gl/tNRmPqFAivukMv6h8';
   function mapHTML() {
     var q = (D.settings.mapQuery || '').trim() || MAPQ_DEFAULT;
-    return '<div class="sh"><span class="eyebrow">Find us</span><h2>Visit ' + esc(COMPANY) + '</h2><p>' + esc(D.settings.location || 'Bahadurgarh, Haryana, India') + '</p></div>' +
+    return '<div class="sh"><span class="eyebrow">Find us</span><h2>Visit ' + esc(COMPANY) + '</h2><p>' + esc((D.settings.mapQuery || '').trim() || MAPQ_DEFAULT) + '</p></div>' +
       '<div class="mapbox"><iframe title="Map: ' + esc(COMPANY) + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed"></iframe></div>' +
-      '<p style="margin-top:12px"><a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) + '">Open in Google Maps</a></p>';
+      '<p style="margin-top:12px"><a class="btn ghost" target="_blank" rel="noopener" href="' + ((D.settings.mapQuery || '').trim() ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) : MAPLINK_DEFAULT) + '">Open in Google Maps</a></p>';
   }
   function enquiryForm(host, o) {
     o = o || {};
