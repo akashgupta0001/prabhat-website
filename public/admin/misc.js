@@ -300,9 +300,10 @@
     var p = A.S.products.find(function (x) { return x.id === id; }); if (!p) return;
     var img = p.img || (p.gallery && p.gallery[0]) || (p.dropboxFolder ? '/api/dbx/img?p=' + p.id + '&i=0&w=1600' : '');
     if (!img) { A.toast('This product has no photo yet.', 'err'); return; }
-    A.SOC.post = { image: img };
+    var src = /^(\/|https?:)/.test(img) ? img : A.imgUrl(img) + '?w=1600';
+    A.SOC.post = { image: src };
     A.modal('<div class="sh-h"><h3>Post to Facebook / Instagram</h3><button class="ic-btn" data-act="closeModal" aria-label="Close">' + A.ic('x') + '</button></div><div class="sh-b">' +
-      '<div class="thumb" style="width:110px;height:110px;' + A.bg(img) + '"></div>' +
+      '<div class="thumb" style="width:110px;height:110px;background-image:url(' + src + ')"></div>' +
       '<label class="fld"><span>Caption (you can edit it)</span><textarea id="sp_cap" rows="9">' + esc(caption(p)) + '</textarea></label>' +
       '<label><input type="checkbox" id="sp_fb" checked> Facebook Page</label> &nbsp; <label><input type="checkbox" id="sp_ig" checked> Instagram</label>' +
       '<p class="cell-s">Instagram needs a JPEG or PNG photo. The post goes live immediately.</p></div><div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="socPost">Post now</button></div>', 'sm');
