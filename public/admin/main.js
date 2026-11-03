@@ -83,9 +83,9 @@
     /* homepage */
     hpTab: function (t) { UI.tab = t.dataset.v; A.render(); }, hpEdit: function (t) { UI.tab = t.dataset.v; go('homepage'); },
     selSlide: function (t) { UI.sel = +t.dataset.i; A.render(); },
-    addSlide: function () { A.H.slides.push({ id: 's' + Date.now(), title: 'New slide', subtitle: '', desc: '', img: '', imgM: '', btnLabel: 'Explore Collection', btnUrl: '/catalogue', active: true, start: '', end: '' }); A.dirty = true; UI.sel = A.H.slides.length - 1; UI.tab = 'hero'; A.render(); },
-    dupSlide: function () { var s = A.clone(A.H.slides[UI.sel]); s.id = 's' + Date.now(); s.title += ' (copy)'; A.H.slides.splice(UI.sel + 1, 0, s); UI.sel++; A.dirty = true; A.render(); },
-    delSlide: function () { var s = A.H.slides[UI.sel]; A.confirmBox({ title: 'Delete slide?', body: '<p><b>' + esc(s.title) + '</b> will be removed from the draft. The live website changes only when you publish.</p>', actions: [{ label: 'Delete slide', cls: 'dng', fn: function () { A.H.slides.splice(UI.sel, 1); UI.sel = Math.max(0, UI.sel - 1); A.dirty = true; A.closeModal(); A.render(); } }] }); },
+    addSlide: function () { A.H.slides.push({ id: 's' + Date.now(), title: '', subtitle: '', desc: '', img: '', imgM: '', btnLabel: 'Explore Collection', btnUrl: '/catalogue', active: true, start: '', end: '' }); A.dirty = true; UI.sel = A.H.slides.length - 1; UI.tab = 'hero'; A.render(); },
+    dupSlide: function () { var s = A.clone(A.H.slides[UI.sel]); s.id = 's' + Date.now(); if (s.title) s.title += ' (copy)'; A.H.slides.splice(UI.sel + 1, 0, s); UI.sel++; A.dirty = true; A.render(); },
+    delSlide: function () { var s = A.H.slides[UI.sel]; A.confirmBox({ title: 'Delete slide?', body: '<p><b>' + esc(s.title || 'This slide') + '</b> will be removed from the draft. The live website changes only when you publish.</p>', actions: [{ label: 'Delete slide', cls: 'dng', fn: function () { A.H.slides.splice(UI.sel, 1); UI.sel = Math.max(0, UI.sel - 1); A.dirty = true; A.closeModal(); A.render(); } }] }); },
     moveSlide: function (t) { var d = +t.dataset.d, i = UI.sel, j = i + d, a = A.H.slides; if (j < 0 || j >= a.length) return; var x = a[i]; a[i] = a[j]; a[j] = x; UI.sel = j; A.dirty = true; A.render(); },
     slideImg: function (t) { var k = t.dataset.k; A.pickImage(function (id) { A.H.slides[UI.sel][k] = id; A.dirty = true; A.render(); }); },
     slideImgRm: function (t) { A.H.slides[UI.sel][t.dataset.k] = ''; A.dirty = true; A.render(); },
