@@ -288,3 +288,11 @@ h3.wm img{height:clamp(70px,9vw,104px);width:auto;max-width:100%;display:block}
 
 
 .findus{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:28px;align-items:center}.mapbox{border-radius:14px;overflow:hidden;border:1px solid #d9e0ee;box-shadow:0 6px 20px rgba(14,31,74,.08)}.mapbox iframe{display:block;width:100%;height:300px;border:0}@media(max-width:820px){.findus{grid-template-columns:1fr}.mapbox iframe{height:260px}}
+
+.findus{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+.eqgrid{align-items:stretch!important}
+.eqgrid>.contact{height:100%;box-sizing:border-box;display:flex;align-items:center}
+.eqgrid>div:last-child{display:flex;flex-direction:column}
+.eqgrid #enq-form{flex:1;display:flex;max-width:none!important}
+.eqgrid #enq-form>form{flex:1;width:100%;box-sizing:border-box}
+@media(max-width:820px){.findus{grid-template-columns:1fr!important}.eqgrid>.contact{height:auto}}
