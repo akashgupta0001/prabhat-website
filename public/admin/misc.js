@@ -285,6 +285,17 @@
     var price = p.mrp ? '\nMRP: Rs ' + p.mrp : '', sz = p.sizes && p.sizes.length ? '\nSizes: ' + p.sizes.join(', ') : '';
     return br + ' - ' + p.name + (p.sku ? ' (' + p.sku + ')' : '') + price + sz + '\n\nOrder / dealer enquiry on WhatsApp: 9818185161\nhttps://supremlite.com/product?s=' + encodeURIComponent(p.slug || p.id) + '\n\n#footwear #' + br.toLowerCase().replace(/[^a-z0-9]/g, '') + ' #slippers #shoes #madeinindia';
   }
+  // Instagram only accepts JPEG, so the photo is converted to a JPEG in the browser first.
+  function toJpeg(src) {
+    return fetch(src, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('Could not load the product photo.'); return r.blob(); })
+      .then(function (blob) { return createImageBitmap(blob); })
+      .then(function (bm) {
+        var s = Math.min(1, 1440 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+        c.width = Math.round(bm.width * s); c.height = Math.round(bm.height * s);
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0, c.width, c.height);
+        return c.toDataURL('image/jpeg', 0.88).split(',')[1];
+      });
+  }
   A.socPostForm = function (id) {
     var p = A.S.products.find(function (x) { return x.id === id; }); if (!p) return;
     var img = p.img || (p.gallery && p.gallery[0]) || (p.dropboxFolder ? '/api/dbx/img?p=' + p.id + '&i=0&w=1600' : '');
@@ -297,8 +308,9 @@
       '<p class="cell-s">Instagram needs a JPEG or PNG photo. The post goes live immediately.</p></div><div class="sh-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="socPost">Post now</button></div>', 'sm');
   };
   A.socPost = function () {
-    var b = { step: 'post', image: A.SOC.post.image, caption: A.mv('sp_cap'), fb: A.mv('sp_fb'), ig: A.mv('sp_ig') };
-    A.toast('Posting...'); api(b).then(function (j) { A.closeModal(); A.toast('Posted: ' + Object.keys(j.result).join(' and ') + '.'); A.log('Posted a product to social media'); }).catch(function (e) { A.toast(e.message, 'err'); });
+    var b = { step: 'post', caption: A.mv('sp_cap'), fb: A.mv('sp_fb'), ig: A.mv('sp_ig') };
+    A.toast('Preparing the photo and posting...');
+    toJpeg(A.SOC.post.image).then(function (j) { b.jpeg = j; return api(b); }).then(function (j) { A.closeModal(); A.toast('Posted: ' + Object.keys(j.result).join(' and ') + '.'); A.log('Posted a product to social media'); }).catch(function (e) { A.toast(e.message, 'err'); });
   };
   var prev = V.settings;
   V.settings = function () {

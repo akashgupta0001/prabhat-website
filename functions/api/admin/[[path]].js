@@ -36,12 +36,17 @@ export async function onRequest({ request, env, params }) {
   if (a === 'social' && m === 'POST') {
     let b; try { b = await request.json(); } catch { return bad('Invalid request.'); }
     if (b.step === 'post') {
-      const caption = String(b.caption || '').slice(0, 2000), img = String(b.image || '');
-      if (!caption || !img) return bad('A caption and a photo are needed.');
+      const caption = String(b.caption || '').slice(0, 2000), jpeg = String(b.jpeg || '');
+      if (!caption || !jpeg) return bad('A caption and a photo are needed.');
       if (!b.fb && !b.ig) return bad('Choose Facebook, Instagram or both.');
-      const origin = new URL(request.url).origin;
-      const imageUrl = /^https?:\/\//.test(img) ? img : origin + (img.startsWith('/') ? '' : '/') + img;
-      try { return json({ ok: true, result: await socPublish(env, { caption, imageUrl, fb: !!b.fb, ig: !!b.ig }) }); } catch (e) { return bad(e.message || 'Posting failed.'); }
+      if (jpeg.length > 1800000) return bad('The photo is too large to post.');
+      const key = 'soc' + [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, '0')).join('');
+      const bin = atob(jpeg), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      await putImage(env, key, 'image/jpeg', buf);
+      const imageUrl = new URL(request.url).origin + '/img/' + key;
+      try { return json({ ok: true, result: await socPublish(env, { caption, imageUrl, fb: !!b.fb, ig: !!b.ig }) }); }
+      catch (e) { return bad(e.message || 'Posting failed.'); }
+      finally { try { await deleteImageIfUnused(env, key); } catch { /* ignore */ } }
     }
     const token = String(b.token || '').trim();
     if (!token) return bad('Paste the access token first.');
