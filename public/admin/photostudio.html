@@ -72,14 +72,17 @@
       </div>
       <div class="card" id="edgeCard" hidden>
         <span class="lbl">Fix the edges</span>
-        <div class="chips" id="brush"><button data-b="off" class="on">✋ Move</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
+        <div class="chips" id="brush"><button data-b="off" class="on">✋ Move</button><button data-b="select">✨ Select object</button><button data-b="restore">🖌 Restore</button><button data-b="erase">⌫ Erase</button></div>
         <p class="muted s" id="brushNote">Choose Restore or Erase, then paint on the photo. Zoom in for fine edges.</p>
+        <div class="chips" id="selOpts" hidden><button data-s="only" class="on">Keep only this</button><button data-s="add">Add to cut-out</button></div>
         <div class="chips" id="viewChips"><span class="muted s">Show:</span><button data-v="overlay" class="on">Red = removed</button><button data-v="cut">Cut-out only</button></div>
         <div class="sl"><span>Brush size</span><input type="range" id="bsz" min="4" max="160" value="36"></div>
         <div class="sl"><span>Brush softness</span><input type="range" id="bsoft" min="0" max="100" value="25"></div>
         <div class="sl"><span>Edge tightness</span><input type="range" data-k="tight" min="0" max="40" value="12"></div>
         <div class="sl"><span>Edge sharpness</span><input type="range" data-k="esharp" min="10" max="60" value="25"></div>
         <label class="ck"><input type="checkbox" data-k="dehalo"> Remove colour halos on edges</label>
+        <div class="row" id="fixActs" hidden><button class="btn grow" id="fixUndo" disabled>↶ Undo fix</button><button class="btn grow" id="touchup" title="Runs the AI again on the product only, for closer edges">✨ AI touch-up</button></div>
+        <button class="btn pri wide" id="fixDone" hidden>✓ Done, show result</button>
         <button class="btn ghost wide" id="maskReset">Undo all brush edits</button>
       </div>
     </div>

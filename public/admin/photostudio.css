@@ -68,7 +68,7 @@ textarea { resize: vertical; }
 .scroller { position: absolute; inset: 0; overflow: auto; }
 #spacer { width: 1px; height: 1px; }
 #cv { position: absolute; left: 0; top: 0; touch-action: none; cursor: grab; }
-#cv.drag { cursor: grabbing; } #cv.paint { cursor: none; }
+#cv.drag { cursor: grabbing; } #cv.paint { cursor: none; } #cv.sel { cursor: crosshair; }
 #loupe { position: absolute; top: 12px; left: 12px; width: 180px; height: 180px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 18px rgba(0,0,0,.35); pointer-events: none; z-index: 4; background: #fff; }
 #loupe.right { left: auto; right: 28px; }
 .zoom { display: inline-flex; gap: 2px; margin-left: 6px; }

@@ -55,7 +55,7 @@
         P = Object.assign({}, DEF, { asp: 'orig' }); hist = [JSON.stringify(P)]; hi = 0; undoBtns();
         $('#start').hidden = true; $('#ed').hidden = false; step(2); $('#edgeCard').hidden = true;
         if (product) $('#sProd').value = product.id;
-        st.frame = null; st.frameKey = ''; viewReset(); gotoTab('cut'); sync(); requestAnimationFrame(render); busy(false);
+        st.frame = null; st.frameKey = ''; fixHist = []; updFixUndo(); updCutBtn(); viewReset(); gotoTab('cut'); sync(); requestAnimationFrame(render); busy(false);
       }).catch(function (e) { busy(false); toast('Could not open this photo: ' + (e.message || e), true); });
   }
   $('#file').onchange = function (e) { var f = e.target.files[0]; if (f) openBlob(f, f.name); e.target.value = ''; };
@@ -122,12 +122,12 @@
     sessions[key].catch(function () { delete sessions[key]; });
     return sessions[key];
   }
-  function predict(key) {
-    var m = MODELS[key], S = m.size;
+  function predict(key, src, label) {
+    var m = MODELS[key], S = m.size; src = src || st.src;
     return session(key).then(function (sess) {
-      busy(true, 'Removing background…', null);
+      busy(true, label || 'Removing background…', null);
       return new Promise(function (r) { setTimeout(r, 30); }).then(function () {
-        var c = canvas(S, S), g = ctx2(c); g.drawImage(st.src, 0, 0, S, S);
+        var c = canvas(S, S), g = ctx2(c); g.drawImage(src, 0, 0, S, S);
         var d = g.getImageData(0, 0, S, S).data, n = S * S, x = new Float32Array(3 * n), mx = 1;
         for (var i = 0; i < d.length; i += 4) { if (d[i] > mx) mx = d[i]; if (d[i + 1] > mx) mx = d[i + 1]; if (d[i + 2] > mx) mx = d[i + 2]; }
         var mean = m.norm === 'imagenet' ? [0.485, 0.456, 0.406] : [0.5, 0.5, 0.5], sd = m.norm === 'imagenet' ? [0.229, 0.224, 0.225] : [1, 1, 1];
@@ -161,15 +161,16 @@
     }
     return out;
   }
-  function guidedRefine() {
-    var W = st.src.width, H = st.src.height, k = Math.min(1, 1024 / Math.max(W, H)), w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k)), n = w * h;
-    var c = canvas(w, h), g = ctx2(c); g.drawImage(st.src, 0, 0, w, h); var d = g.getImageData(0, 0, w, h).data;
-    var S = st.probSize, pc = canvas(S, S), pg = ctx2(pc), pid = pg.createImageData(S, S);
-    for (var i = 0; i < st.prob.length; i++) { pid.data[i * 4 + 3] = st.prob[i] * 255; }
+  function guidedRefine(src, prob, probSize) {
+    src = src || st.src; prob = prob || st.prob; probSize = probSize || st.probSize;
+    var W = src.width, H = src.height, k = Math.min(1, 1024 / Math.max(W, H)), w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k)), n = w * h;
+    var c = canvas(w, h), g = ctx2(c); g.drawImage(src, 0, 0, w, h); var d = g.getImageData(0, 0, w, h).data;
+    var S = probSize, pc = canvas(S, S), pg = ctx2(pc), pid = pg.createImageData(S, S);
+    for (var i = 0; i < prob.length; i++) { pid.data[i * 4 + 3] = prob[i] * 255; }
     pg.putImageData(pid, 0, 0); var up = canvas(w, h), ug = ctx2(up); ug.drawImage(pc, 0, 0, w, h); var ud = ug.getImageData(0, 0, w, h).data;
     var R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n), Pp = new Float32Array(n);
     for (i = 0; i < n; i++) { R[i] = d[i * 4] / 255; G[i] = d[i * 4 + 1] / 255; B[i] = d[i * 4 + 2] / 255; Pp[i] = ud[i * 4 + 3] / 255; }
-    var r = st.probSize >= 1024 ? Math.max(2, Math.round(Math.max(w, h) / 340)) : Math.max(3, Math.round(Math.max(w, h) / 128)), eps = st.probSize >= 1024 ? 1e-3 : 1e-4;
+    var r = probSize >= 1024 ? Math.max(2, Math.round(Math.max(w, h) / 340)) : Math.max(3, Math.round(Math.max(w, h) / 128)), eps = probSize >= 1024 ? 1e-3 : 1e-4;
     function mul(a, b) { var o = new Float32Array(n); for (var j = 0; j < n; j++) o[j] = a[j] * b[j]; return o; }
     var mR = boxBlur(R, w, h, r), mG = boxBlur(G, w, h, r), mB = boxBlur(B, w, h, r), mP = boxBlur(Pp, w, h, r);
     var cR = boxBlur(mul(R, Pp), w, h, r), cG = boxBlur(mul(G, Pp), w, h, r), cB = boxBlur(mul(B, Pp), w, h, r);
@@ -188,7 +189,7 @@
     }
     aR = boxBlur(aR, w, h, r); aG = boxBlur(aG, w, h, r); aB = boxBlur(aB, w, h, r); bb = boxBlur(bb, w, h, r);
     // apply at full size: q = a . I + b, with a and b smoothly scaled up
-    var fc = canvas(W, H), fg = ctx2(fc); fg.drawImage(st.src, 0, 0); var fd = fg.getImageData(0, 0, W, H).data, out = new Float32Array(W * H);
+    var fc = canvas(W, H), fg = ctx2(fc); fg.drawImage(src, 0, 0); var fd = fg.getImageData(0, 0, W, H).data, out = new Float32Array(W * H);
     var sx = (w - 1) / Math.max(1, W - 1), sy = (h - 1) / Math.max(1, H - 1);
     for (var y = 0; y < H; y++) {
       var fy = y * sy, y0 = fy | 0, y1 = Math.min(h - 1, y0 + 1), ty = fy - y0;
@@ -411,12 +412,17 @@
     g.imageSmoothingEnabled = view.docW / f.width < 4; g.imageSmoothingQuality = 'high';
     g.drawImage(f, x, y, view.docW, view.docH);
     g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 1; g.strokeRect(x - 0.5, y - 0.5, view.docW + 1, view.docH + 1);
-    var paint = refineView() && st.brush !== 'off';
+    var paint = refineView() && (st.brush === 'restore' || st.brush === 'erase');
     if (paint && cursor) { // brush outline
       g.beginPath(); g.arc(cursor.x, cursor.y, +$('#bsz').value / 2, 0, Math.PI * 2);
       g.strokeStyle = '#fff'; g.lineWidth = 2.5; g.stroke(); g.strokeStyle = st.brush === 'erase' ? '#e11d48' : '#16a34a'; g.lineWidth = 1.2; g.stroke();
     }
-    cv.className = paint ? 'paint' : '';
+    if (st.selBox) { // selection box being drawn
+      var b = st.selBox, bx = Math.min(b.x0, b.x1), by = Math.min(b.y0, b.y1), bw = Math.abs(b.x1 - b.x0), bh = Math.abs(b.y1 - b.y0);
+      g.fillStyle = 'rgba(15,23,42,.35)'; g.fillRect(0, 0, vw, by); g.fillRect(0, by + bh, vw, vh - by - bh); g.fillRect(0, by, bx, bh); g.fillRect(bx + bw, by, vw - bx - bw, bh);
+      g.setLineDash([6, 4]); g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(bx, by, bw, bh); g.setLineDash([]); g.strokeStyle = '#1F5FD6'; g.lineWidth = 1; g.strokeRect(bx, by, bw, bh);
+    }
+    cv.className = paint ? 'paint' : (refineView() && st.brush === 'select') ? 'sel' : '';
     drawLoupe(f, paint);
   }
   function drawLoupe(f, paint) {
@@ -484,8 +490,8 @@
   $$('#tabs button').forEach(function (b) { b.onclick = function () { gotoTab(b.dataset.t); }; });
 
   /* cut out */
-  function cutout() {
-    if (st.cut) return Promise.resolve();
+  function cutout(again) {
+    if (st.cut && !again) return Promise.resolve();
     var key = st.mode === 'person' ? 'person' : st.quality;
     return predict(key).catch(function (e) {
       if (key === 'hd') { toast('HD could not run on this device, using Standard instead.', true); st.quality = 'fast'; sync(); return predict('fast'); }
@@ -496,13 +502,18 @@
       buildMask();
       P.asp = '1'; P.sc = 1; P.x = 0.5; P.y = 0.5; commit();
       $('#edgeCard').hidden = false; $('#hint').hidden = false; setTimeout(function () { $('#hint').hidden = true; }, 4500);
-      busy(false); sync(); render();
+      busy(false); sync(); updCutBtn(); render();
     }).catch(function (e) { busy(false); toast('Background removal failed: ' + (e.message || e) + '. Please try again.', true); throw e; });
   }
-  function recutHint() { if (st.cut) { st.cut = false; st.prob = null; $('#edgeCard').hidden = true; render(); toast('Press Remove background to cut out again.'); } }
+  function recutHint() { if (st.cut) { st.cut = false; st.prob = null; $('#edgeCard').hidden = true; updCutBtn(); render(); toast('Press Remove background to cut out again.'); } }
+  function updCutBtn() { $('#cut').textContent = st.cut ? '↻ Remove background again' : 'Remove background'; }
   $$('#qChips button').forEach(function (b) { b.onclick = function () { if (st.quality === b.dataset.q) return; st.quality = b.dataset.q; sync(); recutHint(); }; });
   $$('#modeChips button').forEach(function (b) { b.onclick = function () { if (st.mode === b.dataset.m) return; st.mode = b.dataset.m; sync(); recutHint(); }; });
-  $('#cut').onclick = function () { cutout().catch(function () {}); };
+  $('#cut').onclick = function () {
+    var again = st.cut;
+    if (again) { st.restore = st.erase = null; st.base = null; fixHist = []; updFixUndo(); }
+    cutout(again).then(function () { if (again) { setBrush('off'); toast('Background removed again from the original photo. Brush edits were cleared.'); } }).catch(function () {});
+  };
   $('#magic').onclick = function () {
     cutout().then(function () {
       autoEnhance(); P.bg = '#ffffff'; P.asp = '1'; P.sc = 1; P.x = 0.5; P.y = 0.5; P.rot = 0; P.shad = 'under';
@@ -514,8 +525,11 @@
   function setBrush(m) {
     var wasRefine = refineView();
     st.brush = m; chips('#brush', 'b', m);
-    $('#brushNote').textContent = m === 'restore' ? 'Paint over parts of the product that were removed by mistake. Red shows what is removed.' : m === 'erase' ? 'Paint over leftover background to remove it. Red shows what is removed.' : 'Choose Restore or Erase, then paint on the photo. Zoom in for fine edges.';
-    $('#viewChips').hidden = m === 'off'; if (m !== 'off') $('#hint').hidden = true;
+    $('#brushNote').textContent = m === 'restore' ? 'Paint over parts of the product that were removed by mistake. Red shows what is removed.'
+      : m === 'erase' ? 'Paint over leftover background to remove it. Red shows what is removed.'
+      : m === 'select' ? 'Drag a box around the product and the AI cuts out just that. Or tap a kept part to keep only that object.'
+      : 'Pick a tool, then work on the photo. Zoom in for fine edges.';
+    $('#viewChips').hidden = $('#fixActs').hidden = m === 'off'; $('#selOpts').hidden = m !== 'select'; $('#fixDone').hidden = m === 'off'; if (m !== 'off') $('#hint').hidden = true;
     if (wasRefine !== refineView()) viewReset();
     render();
   }
@@ -523,11 +537,80 @@
   $$('#viewChips button').forEach(function (b) { b.onclick = function () { st.viewMode = b.dataset.v; chips('#viewChips', 'v', st.viewMode); render(); }; });
   $$('#brush button').forEach(function (b) { b.onclick = function () { if (!st.cut) return toast('Remove the background first.'); setBrush(b.dataset.b); }; });
   $('#maskReset').onclick = function () {
-    if (!st.cut) return; st.restore = canvas(st.src.width, st.src.height); st.erase = canvas(st.src.width, st.src.height);
+    if (!st.cut) return; snapshot(); st.restore = canvas(st.src.width, st.src.height); st.erase = canvas(st.src.width, st.src.height);
     st._mv = (st._mv || 0) + 1; buildMask(); render(); toast('Brush edits removed.');
   };
+
+  /* undo for edge fixes (brush strokes, selections, touch-ups) */
+  var fixHist = [];
+  function copyCanvas(c) { var x = canvas(c.width, c.height); ctx2(x).drawImage(c, 0, 0); return x; }
+  function snapshot() { fixHist.push({ base: st.base, restore: copyCanvas(st.restore), erase: copyCanvas(st.erase) }); if (fixHist.length > 6) fixHist.shift(); updFixUndo(); }
+  function updFixUndo() { $('#fixUndo').disabled = !fixHist.length; }
+  $('#fixUndo').onclick = function () {
+    var h = fixHist.pop(); if (!h) return; st.base = h.base; st.restore = h.restore; st.erase = h.erase;
+    st._mv = (st._mv || 0) + 1; buildMask(); updFixUndo(); render();
+  };
+  $('#fixDone').onclick = function () { setBrush('off'); $('#stage').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); toast('Edges applied. Pick a background next.'); };
+
+  /* AI select: cut out only what is inside a box (also used for the touch-up) */
+  var selMode = 'only';
+  $$('#selOpts button').forEach(function (b) { b.onclick = function () { selMode = b.dataset.s; chips('#selOpts', 's', selMode); }; });
+  function aiSelect(box, mode, keepEdits, label) {
+    var W = st.src.width, H = st.src.height, padX = box.w * 0.04, padY = box.h * 0.04;
+    var x0 = Math.max(0, Math.floor(box.x - padX)), y0 = Math.max(0, Math.floor(box.y - padY));
+    var x1 = Math.min(W, Math.ceil(box.x + box.w + padX)), y1 = Math.min(H, Math.ceil(box.y + box.h + padY)), w = x1 - x0, h = y1 - y0;
+    if (w < 8 || h < 8) return Promise.resolve();
+    var crop = canvas(w, h); ctx2(crop).drawImage(st.src, x0, y0, w, h, 0, 0, w, h);
+    var key = st.mode === 'person' ? 'person' : st.quality;
+    return predict(key, crop, label || 'Selecting the object…').then(function (r) {
+      var cb = guidedRefine(crop, r.prob, r.size), nb = mode === 'add' ? st.base.slice() : new Float32Array(W * H);
+      for (var y = 0; y < h; y++) {
+        var row = (y + y0) * W + x0, cr = y * w;
+        for (var x = 0; x < w; x++) { var v = cb[cr + x]; nb[row + x] = mode === 'add' ? Math.max(nb[row + x], v) : v; }
+      }
+      snapshot(); st.base = nb;
+      if (!keepEdits) {
+        if (mode === 'add') ctx2(st.erase).clearRect(x0, y0, w, h);
+        else { st.restore = canvas(W, H); st.erase = canvas(W, H); }
+      }
+      st._mv = (st._mv || 0) + 1; buildMask(); busy(false); render();
+    }).catch(function (e) { busy(false); toast('Could not select: ' + (e.message || e), true); });
+  }
+  $('#touchup').onclick = function () {
+    if (!st.cut || !st.box) return;
+    aiSelect(st.box, 'only', true, 'AI touch-up: cutting out the product closely…').then(function () { toast('Touch-up done. The AI looked closely at the product only.'); });
+  };
+  // tap a kept area: keep only that connected object
+  function keepObjectAt(ix, iy) {
+    var W = st.src.width, H = st.src.height, k = Math.min(1, 512 / Math.max(W, H)), w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k));
+    var c = canvas(w, h), g = ctx2(c); g.drawImage(st.mask, 0, 0, w, h); var d = g.getImageData(0, 0, w, h).data;
+    var sx = Math.min(w - 1, Math.max(0, Math.round(ix * k))), sy = Math.min(h - 1, Math.max(0, Math.round(iy * k)));
+    if (d[(sy * w + sx) * 4 + 3] < 100) { toast('Tap on a kept part of the photo, or drag a box around the product.'); return; }
+    var on = new Uint8Array(w * h), stack = [sy * w + sx]; on[sy * w + sx] = 1;
+    while (stack.length) {
+      var p = stack.pop(), px = p % w, py = (p / w) | 0;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) {
+        var nx = px + o[0], ny = py + o[1]; if (nx < 0 || ny < 0 || nx >= w || ny >= h) return;
+        var q = ny * w + nx; if (!on[q] && d[q * 4 + 3] > 20) { on[q] = 1; stack.push(q); }
+      });
+    }
+    for (var it = 0; it < 3; it++) { // grow a little so soft edges stay
+      var nx2 = on.slice();
+      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) if (!on[y * w + x] && ((x > 0 && on[y * w + x - 1]) || (x < w - 1 && on[y * w + x + 1]) || (y > 0 && on[(y - 1) * w + x]) || (y < h - 1 && on[(y + 1) * w + x]))) nx2[y * w + x] = 1;
+      on = nx2;
+    }
+    var keepC = canvas(w, h), kg = ctx2(keepC), kid = kg.createImageData(w, h);
+    for (var i = 0; i < on.length; i++) if (on[i]) { kid.data[i * 4] = kid.data[i * 4 + 1] = kid.data[i * 4 + 2] = kid.data[i * 4 + 3] = 255; }
+    kg.putImageData(kid, 0, 0);
+    snapshot();
+    var nb = new Float32Array(W * H), fx = w / W, fy = h / H;
+    for (y = 0; y < H; y++) { var ky = Math.min(h - 1, (y * fy) | 0); for (x = 0; x < W; x++) if (on[ky * w + Math.min(w - 1, (x * fx) | 0)]) nb[y * W + x] = st.base[y * W + x]; }
+    st.base = nb;
+    var rg = ctx2(st.restore); rg.globalCompositeOperation = 'destination-in'; rg.drawImage(keepC, 0, 0, W, H); rg.globalCompositeOperation = 'source-over';
+    st._mv = (st._mv || 0) + 1; buildMask(); render(); toast('Kept only that object.');
+  }
   (function () {
-    var drag = null, pan = null, painting = false, last = null, dirty = false, pts = {}, pinch = null, space = false;
+    var drag = null, pan = null, sel = null, painting = false, last = null, dirty = false, pts = {}, pinch = null, space = false;
     function local(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     function imgPt(l) {  // screen point -> photo pixels
       var u = (l.x - (view.ox - scroller.scrollLeft)) / view.docW, v = (l.y - (view.oy - scroller.scrollTop)) / view.docH;
@@ -560,7 +643,8 @@
         pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: view.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; return;
       }
       var l = pts[e.pointerId];
-      if (refineView() && st.brush !== 'off' && !space && e.button === 0) { painting = true; last = imgPt(l); stroke(last, last); return; }
+      if (refineView() && st.brush === 'select' && !space && e.button === 0) { sel = { x0: l.x, y0: l.y, x1: l.x, y1: l.y }; st.selBox = sel; return; }
+      if (refineView() && (st.brush === 'restore' || st.brush === 'erase') && !space && e.button === 0) { snapshot(); painting = true; last = imgPt(l); stroke(last, last); return; }
       if (refineView() || space || e.button === 1 || !st.cut || st.compare || view.zoom > 1 && e.shiftKey) { pan = { x: l.x, y: l.y, sl: scroller.scrollLeft, st: scroller.scrollTop }; cv.classList.add('drag'); return; }
       drag = { x: l.x, y: l.y, sx: P.x, sy: P.y }; cv.classList.add('drag'); $('#hint').hidden = true;
     });
@@ -573,6 +657,7 @@
         zoomTo(pinch.z * d / Math.max(10, pinch.d), mx, my);
         scroller.scrollLeft -= mx - pinch.mx; scroller.scrollTop -= my - pinch.my; pinch.mx = mx; pinch.my = my; return;
       }
+      if (sel) { sel.x1 = l.x; sel.y1 = l.y; render(); return; }
       if (painting) { var p = imgPt(l); stroke(last, p); last = p; return; }
       if (pan) { scroller.scrollLeft = pan.sl - (l.x - pan.x); scroller.scrollTop = pan.st - (l.y - pan.y); return; }
       if (drag) { P.x = drag.sx + (l.x - drag.x) / view.docW; P.y = drag.sy + (l.y - drag.y) / view.docH; render(); return; }
@@ -582,6 +667,12 @@
       delete pts[e.pointerId];
       if (pinch) { if (Object.keys(pts).length < 2) pinch = null; return; }
       finishStroke();
+      if (sel) {
+        var a0 = imgPt({ x: Math.min(sel.x0, sel.x1), y: Math.min(sel.y0, sel.y1) }), a1 = imgPt({ x: Math.max(sel.x0, sel.x1), y: Math.max(sel.y0, sel.y1) }), small = Math.abs(sel.x1 - sel.x0) < 10 && Math.abs(sel.y1 - sel.y0) < 10;
+        sel = null; st.selBox = null; render();
+        if (small) keepObjectAt(a0[0], a0[1]);
+        else aiSelect({ x: a0[0], y: a0[1], w: a1[0] - a0[0], h: a1[1] - a0[1] }, selMode === 'add' ? 'add' : 'only', false).then(function () { toast(selMode === 'add' ? 'Added to the cut-out.' : 'Selected. Everything outside the box was removed.'); });
+      }
       if (pan) { pan = null; cv.classList.remove('drag'); }
       if (drag) { drag = null; cv.classList.remove('drag'); commit(); sync(); }
     }
