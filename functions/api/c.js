@@ -7,16 +7,24 @@ const TTL = 10 * 60 * 1000;
 const MAX_ITEMS = 40;
 const MAX_TEXT = 50000;
 
+let tableReady = false;
 async function ready(env) {
+  if (tableReady) return;
   await init(env);
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS drops (id TEXT PRIMARY KEY, kind TEXT NOT NULL, name TEXT, mime TEXT, text TEXT, bytes INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, expires INTEGER NOT NULL)').run();
+  tableReady = true;
 }
 
-async function purge(env) {
+// One query: loads everything, then deletes only what has expired (usually nothing).
+async function loadAndPurge(env) {
   const now = Date.now();
-  const old = await env.DB.prepare("SELECT id FROM drops WHERE expires <= ? AND kind = 'file'").bind(now).all();
-  for (const r of old.results || []) await dropFile(env, r.id);
-  await env.DB.prepare('DELETE FROM drops WHERE expires <= ?').bind(now).run();
+  const all = ((await env.DB.prepare('SELECT * FROM drops ORDER BY created DESC').all()).results) || [];
+  const dead = all.filter((r) => r.expires <= now);
+  if (dead.length) {
+    for (const r of dead) if (r.kind === 'file') await dropFile(env, r.id);
+    await env.DB.prepare('DELETE FROM drops WHERE expires <= ?').bind(now).run();
+  }
+  return all.filter((r) => r.expires > now);
 }
 
 async function dropFile(env, id) {
@@ -29,13 +37,13 @@ const safeName = (n) => String(n || 'file').replace(/[\\/\r\n"<>:*?|]/g, '_').sl
 
 export async function onRequest({ request, env }) {
   await ready(env);
-  await purge(env);
   const url = new URL(request.url), m = request.method;
   const noStore = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
 
   if (m === 'GET' && url.searchParams.get('f')) {
     const id = url.searchParams.get('f');
     if (!/^dr[a-f0-9]{16}$/.test(id)) return bad('Not found.', 404);
+    await loadAndPurge(env);
     const row = await env.DB.prepare("SELECT * FROM drops WHERE id = ? AND kind = 'file'").bind(id).first();
     const img = row && (await getImage(env, id));
     if (!img) return bad('This file has expired.', 404);
@@ -43,8 +51,7 @@ export async function onRequest({ request, env }) {
   }
 
   if (m === 'GET') {
-    const rows = await env.DB.prepare('SELECT * FROM drops ORDER BY created DESC').all();
-    return json({ now: Date.now(), ttl: TTL, items: (rows.results || []).map(view) }, 200, noStore);
+    return json({ now: Date.now(), ttl: TTL, items: (await loadAndPurge(env)).map(view) }, 200, noStore);
   }
 
   if (m === 'DELETE') {
@@ -61,8 +68,8 @@ export async function onRequest({ request, env }) {
   }
 
   if (m === 'POST') {
-    const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM drops').first();
-    if (count && count.n >= MAX_ITEMS) return bad('The window is full. Delete something or wait a few minutes.', 429);
+    const live = await loadAndPurge(env);
+    if (live.length >= MAX_ITEMS) return bad('The window is full. Delete something or wait a few minutes.', 429);
     const now = Date.now(), id = 'dr' + [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, '0')).join('');
     const ct = request.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
