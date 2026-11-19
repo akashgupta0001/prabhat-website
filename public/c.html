@@ -85,7 +85,7 @@ button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line
   dz.addEventListener('drop', function (e) { if (e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files); });
   document.addEventListener('paste', function (e) { var fs = e.clipboardData && e.clipboardData.files; if (fs && fs.length) { e.preventDefault(); upload(fs); } });
   setInterval(function () { if (document.hidden) return; var now = Date.now() + skew, gone = false; document.querySelectorAll('.left').forEach(function (s) { var r = +s.dataset.x - now; if (r <= 0) gone = true; else s.textContent = left(r); }); if (gone) draw(); }, 1000);
-  // Light on the server: refresh only while the tab is visible, slowly, and stop after 20 idle minutes.
+  // Quick (3 s) while you are using the page, slower when idle, off when the tab is hidden, paused after 20 idle minutes.
   var last = Date.now(), paused = false;
   function touch() { last = Date.now(); if (paused) { paused = false; msg(''); load(); } }
   ['click', 'keydown', 'touchstart', 'mousemove', 'scroll'].forEach(function (n) { document.addEventListener(n, function () { if (paused) touch(); else last = Date.now(); }, { passive: true }); });
@@ -97,7 +97,7 @@ button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line
         else load();
       }
       tick();
-    }, live ? 10000 : 30000);
+    }, Date.now() - last < 90000 ? 3000 : live ? 10000 : 30000);
   })();
   document.addEventListener('visibilitychange', function () { if (!document.hidden && !paused) load(); });
   load();
