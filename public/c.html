@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Drop</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--ink:#0e1f4a;--mut:#5c6785;--line:#d9e0ee;--acc:#e10600;--pri:#1d3a8a}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1226;--card:#131c38;--ink:#eaf0ff;--mut:#93a0c4;--line:#27335a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:transparent;color:inherit;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 16px;background:var(--pri);color:#fff;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}button.dng{background:transparent;color:var(--acc);border:1px solid var(--line)}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--mut)}.drop.on{border-color:var(--pri);background:rgba(29,58,138,.07)}
+.item{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border-top:1px solid var(--line);padding:12px 0}.item:first-child{border-top:0}
+.body{min-width:0;flex:1}.txt{white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;background:rgba(127,127,127,.08);border-radius:8px;padding:8px 10px}
+.name{font-weight:600;word-break:break-all}.meta{color:var(--mut);font-size:13px}.left{font-variant-numeric:tabular-nums}.acts{display:flex;gap:6px;flex-wrap:wrap}.acts button{padding:7px 12px}
+.empty{color:var(--mut);text-align:center;padding:26px 0}#msg{color:var(--acc);min-height:20px;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Drop</h1>
+<p class="sub">Paste text or add files. Everything is deleted automatically 10 minutes after it is added.</p>
+<div class="card">
+  <textarea id="t" placeholder="Paste or type text here…" autofocus></textarea>
+  <div class="row"><button id="addT">Add text</button><span id="msg" role="status"></span></div>
+</div>
+<div class="card">
+  <div class="drop" id="dz">Drag files here, paste an image, or <button class="ghost" id="pick" type="button">choose files</button><input id="f" type="file" multiple hidden></div>
+</div>
+<div class="card"><div class="row" style="margin:0 0 6px;justify-content:space-between"><b>In this window</b><button class="dng" id="clr" type="button">Clear all</button></div><div id="list"><div class="empty">Nothing here.</div></div></div>
+</main>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); }, items = [], skew = 0, API = '/api/c';
+  function msg(s) { $('#msg').textContent = s || ''; if (s) setTimeout(function () { if ($('#msg').textContent === s) $('#msg').textContent = ''; }, 5000); }
+  function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+  function left(ms) { var s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function api(method, q, body, raw) {
+    return fetch(API + (q || ''), { method: method, headers: body && !raw ? { 'content-type': 'application/json' } : undefined, body: raw ? body : body ? JSON.stringify(body) : undefined, cache: 'no-store' })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Failed'); return j; }); });
+  }
+  function load() { return api('GET').then(function (j) { skew = j.now - Date.now(); items = j.items; draw(); }).catch(function () {}); }
+  function draw() {
+    var now = Date.now() + skew, live = items.filter(function (i) { return i.expires > now; }), box = $('#list'); box.textContent = '';
+    if (!live.length) { var e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Nothing here.'; box.appendChild(e); return; }
+    live.forEach(function (i) {
+      var row = document.createElement('div'); row.className = 'item'; var b = document.createElement('div'); b.className = 'body';
+      if (i.kind === 'text') { var t = document.createElement('div'); t.className = 'txt'; t.textContent = i.text; b.appendChild(t); }
+      else { var n = document.createElement('div'); n.className = 'name'; n.textContent = i.name; b.appendChild(n); }
+      var m = document.createElement('div'); m.className = 'meta'; m.innerHTML = (i.kind === 'file' ? size(i.bytes) + ' · ' : '') + 'disappears in <span class="left" data-x="' + i.expires + '">' + left(i.expires - now) + '</span>'; b.appendChild(m);
+      var a = document.createElement('div'); a.className = 'acts';
+      if (i.kind === 'text') a.appendChild(btn('Copy', 'ghost', function (ev) { copy(i.text, ev.target); }));
+      else { var d = document.createElement('a'); d.className = 'btn'; d.textContent = 'Download'; d.href = API + '?f=' + i.id; d.style.padding = '7px 12px'; d.style.textDecoration = 'none'; a.appendChild(d); }
+      a.appendChild(btn('Delete', 'dng', function () { api('DELETE', '?id=' + i.id).then(load); }));
+      row.appendChild(b); row.appendChild(a); box.appendChild(row);
+    });
+  }
+  function btn(l, c, f) { var b = document.createElement('button'); b.type = 'button'; b.className = c; b.textContent = l; b.style.padding = '7px 12px'; b.onclick = f; return b; }
+  function copy(s, el) {
+    var done = function () { var o = el.textContent; el.textContent = 'Copied'; setTimeout(function () { el.textContent = o; }, 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s).then(done, function () { fallback(s); done(); }); else { fallback(s); done(); }
+  }
+  function fallback(s) { var t = document.createElement('textarea'); t.value = s; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); }
+  function upload(files) {
+    Array.prototype.forEach.call(files, function (f) {
+      var fd = new FormData(); fd.append('file', f, f.name || 'pasted-image.png'); msg('Uploading ' + (f.name || 'file') + '…');
+      api('POST', '', fd, true).then(function () { msg(''); load(); }).catch(function (e) { msg(e.message); });
+    });
+  }
+  $('#addT').onclick = function () { var v = $('#t').value; if (!v.trim()) return; api('POST', '', { text: v }).then(function () { $('#t').value = ''; load(); }).catch(function (e) { msg(e.message); }); };
+  $('#pick').onclick = function () { $('#f').click(); };
+  $('#f').onchange = function () { upload(this.files); this.value = ''; };
+  $('#clr').onclick = function () { if (items.length && confirm('Delete everything in this window now?')) api('DELETE', '?all=1').then(load); };
+  var dz = $('#dz');
+  ['dragenter', 'dragover'].forEach(function (n) { dz.addEventListener(n, function (e) { e.preventDefault(); dz.classList.add('on'); }); });
+  ['dragleave', 'drop'].forEach(function (n) { dz.addEventListener(n, function (e) { e.preventDefault(); dz.classList.remove('on'); }); });
+  dz.addEventListener('drop', function (e) { if (e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files); });
+  document.addEventListener('paste', function (e) { var fs = e.clipboardData && e.clipboardData.files; if (fs && fs.length) { e.preventDefault(); upload(fs); } });
+  setInterval(function () { var now = Date.now() + skew, gone = false; document.querySelectorAll('.left').forEach(function (s) { var r = +s.dataset.x - now; if (r <= 0) gone = true; else s.textContent = left(r); }); if (gone) draw(); }, 1000);
+  setInterval(load, 4000); load();
+})();
+</script>
+</body>
+</html>
