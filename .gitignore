@@ -1,3 +1,6 @@
 node_modules/
 .wrangler/
 .dev.vars
+
+# Photo Studio Firebase build output
+firebase-studio/dist/

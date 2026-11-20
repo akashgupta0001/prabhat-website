@@ -1,0 +1,36 @@
+name: Photo Studio to Firebase
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/admin/photostudio.*'
+      - 'firebase-studio/**'
+      - 'scripts/build-firebase-studio.sh'
+      - '.github/workflows/firebase-photostudio.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that Firebase is connected
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::warning::Add the FIREBASE_SERVICE_ACCOUNT secret to deploy Photo Studio to Firebase (see firebase-studio/README.md)."
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+      - name: Build
+        if: env.SKIP != '1'
+        run: bash scripts/build-firebase-studio.sh
+      - name: Deploy to pbtps.web.app
+        if: env.SKIP != '1'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: prabhat-b9cb8
+          entryPoint: firebase-studio
+          channelId: live

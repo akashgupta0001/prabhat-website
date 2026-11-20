@@ -798,7 +798,13 @@
 
   /* ---------- boot ---------- */
   undoBtns(); sync();
-  if (window.claude && claude.use) {
+  // Stand-alone copy (Firebase): no website login, no product list, no saving anywhere. Download only.
+  var SOLO = window.PS_STANDALONE;
+  if (SOLO) {
+    $('.pick').hidden = true; $('#webCard').hidden = true; $('#start').classList.add('solo');
+    var back = $('.back'); back.href = SOLO.home || '/'; back.title = 'Back to ' + (SOLO.homeName || 'Admin'); back.querySelector('span').textContent = SOLO.homeName || 'Admin';
+  }
+  if (!SOLO && window.claude && claude.use) {
     Promise.all([claude.use('db'), claude.use('assets')]).then(function (r) {
       db = r[0]; assets = r[1];
       return db.collection('products').get();

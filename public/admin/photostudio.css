@@ -43,6 +43,7 @@ textarea { resize: vertical; }
 
 /* start */
 .ps-start { flex: 1; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; padding: 22px max(16px, env(safe-area-inset-right, 0px)) 22px max(16px, env(safe-area-inset-left, 0px)); align-items: start; max-width: 1200px; width: 100%; margin: 0 auto; }
+.ps-start.solo { grid-template-columns: minmax(0, 640px); justify-content: center; }
 .drop { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; background: var(--card); border: 2px dashed var(--line); border-radius: 18px; padding: 46px 24px; cursor: pointer; }
 .drop.over, .drop:hover { border-color: var(--blue); }
 .drop h1 { margin: 4px 0 0; font-size: 24px; text-wrap: balance; }
