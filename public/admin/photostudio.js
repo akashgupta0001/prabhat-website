@@ -802,7 +802,9 @@
   var SOLO = window.PS_STANDALONE;
   if (SOLO) {
     $('.pick').hidden = true; $('#webCard').hidden = true; $('#start').classList.add('solo');
-    var back = $('.back'); back.href = SOLO.home || '/'; back.title = 'Back to ' + (SOLO.homeName || 'Admin'); back.querySelector('span').textContent = SOLO.homeName || 'Admin';
+    var back = $('.back');
+    if (SOLO.home) { back.href = SOLO.home; back.title = 'Back to ' + (SOLO.homeName || 'Admin'); back.querySelector('span').textContent = SOLO.homeName || 'Admin'; }
+    else back.remove();
   }
   if (!SOLO && window.claude && claude.use) {
     Promise.all([claude.use('db'), claude.use('assets')]).then(function (r) {

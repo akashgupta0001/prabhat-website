@@ -12,7 +12,7 @@ import sys, re
 out = sys.argv[1]
 s = open('public/admin/photostudio.html', encoding='utf-8').read()
 s = s.replace('<script src="shim.js"></script>',
-  '<script>window.PS_STANDALONE = { home: "https://pbtaki.web.app/", homeName: "Admin" };</script>')
+  '<script>window.PS_STANDALONE = { home: null };</script>')
 s = s.replace('<title>Photo Studio · Control Panel</title>', '<title>Photo Studio · Prabhat</title>')
 s = s.replace('Remove backgrounds · enhance · save to products', 'Remove backgrounds · enhance · download')
 assert 'shim.js' not in s and 'PS_STANDALONE' in s
