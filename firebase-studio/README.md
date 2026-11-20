@@ -10,9 +10,9 @@ A stand-alone copy of the control panel's Photo Studio, built automatically from
 - Deploys on every push to `main` that changes Photo Studio, via
   `.github/workflows/firebase-photostudio.yml`.
 
-One-time setup (already needed only once):
-1. Firebase console → project prabhat-b9cb8 → Hosting → Add another site → `pbtps`.
-2. Firebase console → Project settings → Service accounts → Generate new private key.
-3. GitHub → this repository → Settings → Secrets and variables → Actions → New secret
-   named `FIREBASE_SERVICE_ACCOUNT`, paste the whole key file.
-4. GitHub → Actions → "Photo Studio to Firebase" → Run workflow.
+Publishing (live since 20 Nov 2026 at https://pbtps.web.app, project prabhat-b9cb8):
+- Open Google Cloud Shell in project prabhat-b9cb8 and run
+  `bash <(curl -fsSL https://raw.githubusercontent.com/akashgupta0001/prabhat-website/main/scripts/deploy-firebase-studio.sh)`
+  after any Photo Studio change, so the Firebase copy matches the website copy.
+- Optional automatic route: add a `FIREBASE_SERVICE_ACCOUNT` secret to this repository and
+  `.github/workflows/firebase-photostudio.yml` will publish on every Photo Studio change.
